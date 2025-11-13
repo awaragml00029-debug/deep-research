@@ -326,20 +326,25 @@ function Setting({ open, onClose }: SettingProps) {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     // 检查是否需要验证 NewAPI Token
-    // 当 provider 是 google 且 mode 是 local 且有 apiKey 时进行验证
+    // 当 provider 是 google/modai 且 mode 是 local 且有 apiKey 时进行验证
+    const isGoogleProvider = values.provider === "google";
+    const isModAIProvider = values.provider === "modai";
+    const currentApiKey = isModAIProvider ? values.modAIApiKey : values.apiKey;
+    const currentApiProxy = isModAIProvider ? values.modAIApiProxy : values.apiProxy;
+
     if (
-      values.provider === "google" &&
+      (isGoogleProvider || isModAIProvider) &&
       values.mode === "local" &&
-      values.apiKey &&
-      values.apiKey.trim() !== ""
+      currentApiKey &&
+      currentApiKey.trim() !== ""
     ) {
       setIsValidating(true);
       update({ keyStatus: "validating" });
 
       try {
         const validationResult = await validateNewApiToken(
-          values.apiKey,
-          values.apiProxy || "https://off.092420.xyz"
+          currentApiKey,
+          currentApiProxy || "https://off.092420.xyz"
         );
 
         if (validationResult.success) {
@@ -348,8 +353,8 @@ function Setting({ open, onClose }: SettingProps) {
 
           // 获取余额
           const balanceData = await getNewApiBalance(
-            values.apiKey,
-            values.apiProxy || "https://off.092420.xyz"
+            currentApiKey,
+            currentApiProxy || "https://off.092420.xyz"
           );
 
           // 一次性更新所有状态，确保同步

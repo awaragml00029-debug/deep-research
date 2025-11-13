@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSettingStore } from "@/store/setting";
 import {
   GEMINI_BASE_URL,
+  MODAI_BASE_URL,
   OPENROUTER_BASE_URL,
   OPENAI_BASE_URL,
   ANTHROPIC_BASE_URL,
@@ -129,6 +130,32 @@ function useModelList() {
         mode === "local"
           ? completePath(apiProxy || GEMINI_BASE_URL, "/v1beta") + "/models"
           : "/api/ai/google/v1beta/models",
+        {
+          headers: {
+            "x-goog-api-key": mode === "local" ? key : accessKey,
+          },
+        }
+      );
+      const { models = [] } = await response.json();
+      const newModelList = (models as GeminiModel[])
+        .filter(
+          (item) =>
+            item.name.startsWith("models/gemini") &&
+            item.supportedGenerationMethods.includes("generateContent")
+        )
+        .map((item) => item.name.replace("models/", ""));
+      setModelList(newModelList);
+      return newModelList;
+    } else if (provider === "modai") {
+      const { modAIApiKey = "", modAIApiProxy } = useSettingStore.getState();
+      if (mode === "local" && !modAIApiKey) {
+        return [];
+      }
+      const key = multiApiKeyPolling(modAIApiKey);
+      const response = await fetch(
+        mode === "local"
+          ? completePath(modAIApiProxy || MODAI_BASE_URL, "/v1beta") + "/models"
+          : "/api/ai/modai/v1beta/models",
         {
           headers: {
             "x-goog-api-key": mode === "local" ? key : accessKey,
