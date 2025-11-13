@@ -65,52 +65,42 @@ export async function getNewApiBalance(
   baseUrl: string = "https://off.092420.xyz"
 ): Promise<NewApiBalanceResponse | null> {
   try {
-    // 尝试获取订阅信息（包含余额）
-    const response = await fetch(
-      `${baseUrl}/v1/dashboard/billing/subscription`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    // 查询用户信息（包含余额）
+    const response = await fetch(`${baseUrl}/api/user/self`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (response.status === 200) {
       const data = await response.json();
-      // 根据实际API响应结构调整
-      // 假设返回格式为 { balance: number } 或类似结构
-      if (data && typeof data.balance === "number") {
+
+      // NewAPI 返回格式: { success: true, data: { quota: number, ... } }
+      if (data && data.success && data.data) {
+        const quota = data.data.quota || 0;
+        // quota 是整数，需要除以 500000 转换为美元
+        const balance = quota / 500000;
+
         return {
-          balance: data.balance,
-          currency: data.currency || "USD",
-        };
-      }
-      // 如果API返回的是其他格式，可能需要调整
-      // 例如：hard_limit_usd, soft_limit_usd 等
-      if (data && typeof data.hard_limit_usd === "number") {
-        return {
-          balance: data.hard_limit_usd,
+          balance: balance,
           currency: "USD",
         };
       }
     }
 
-    // 如果上面的接口不工作，尝试使用模型列表作为验证
-    // 并返回默认余额 0
-    const validateResponse = await validateNewApiToken(token, baseUrl);
-    if (validateResponse.success) {
-      return {
-        balance: 0,
-        currency: "USD",
-      };
-    }
-
-    return null;
+    // 如果查询失败，返回 0
+    return {
+      balance: 0,
+      currency: "USD",
+    };
   } catch (error) {
     console.error("Failed to get NewAPI balance:", error);
-    return null;
+    return {
+      balance: 0,
+      currency: "USD",
+    };
   }
 }
 

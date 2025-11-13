@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useSettingStore } from "./setting";
 
 // 预设主题颜色
 export const THEME_COLORS = {
@@ -81,9 +82,15 @@ export const useThemeStore = create(
     {
       name: "theme",
       onRehydrateStorage: () => (state) => {
-        // 恢复主题时自动应用CSS变量
+        // 恢复主题时检查验证状态
         if (state?.currentTheme) {
-          applyTheme(state.currentTheme);
+          const { keyStatus } = useSettingStore.getState();
+          if (keyStatus === "validated") {
+            applyTheme(state.currentTheme);
+          } else {
+            // 未验证时使用默认黑色（不应用主题）
+            removeTheme();
+          }
         }
       },
     }
@@ -102,4 +109,13 @@ function applyTheme(theme: ThemeColorKey) {
 
   // 设置data-theme属性，方便CSS选择器使用
   root.setAttribute("data-theme", theme);
+}
+
+// 移除主题，恢复默认
+function removeTheme() {
+  const root = document.documentElement;
+  root.style.removeProperty("--theme-primary");
+  root.style.removeProperty("--theme-secondary");
+  root.style.removeProperty("--theme-accent");
+  root.removeAttribute("data-theme");
 }

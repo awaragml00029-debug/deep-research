@@ -90,11 +90,10 @@ export default function BalanceButton() {
     return (
       <div className="flex items-center gap-2">
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 cursor-default"
+          className="flex items-center px-2 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 cursor-default"
           title={`Balance: $${balance.toFixed(2)}`}
         >
           <span className="text-lg">💰</span>
-          <span className="text-sm font-medium text-amber-600 dark:text-amber-400">${balance.toFixed(2)}</span>
         </div>
         {/* 刷新按钮 */}
         <button
@@ -117,11 +116,10 @@ export default function BalanceButton() {
     <div className="flex items-center gap-2">
       <button
         onClick={handleBalanceClick}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/80 hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        title="Click to recharge"
+        className="flex items-center gap-1 px-2 py-2 rounded-lg bg-secondary/80 hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+        title={`Low balance: $${balance.toFixed(2)}. Click to recharge`}
       >
         <Coins className="w-4 h-4" />
-        <span className="text-sm font-medium">${balance.toFixed(2)}</span>
         <AlertTriangle className="w-4 h-4 text-orange-500" />
       </button>
       {/* 刷新按钮 */}
