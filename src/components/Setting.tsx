@@ -221,7 +221,7 @@ function HelpTip({ children, tip }: { children: ReactNode; tip: string }) {
 
 function Setting({ open, onClose }: SettingProps) {
   const { t } = useTranslation();
-  const { mode, provider, searchProvider, update, setKeyStatus, setBalance, updateBalanceTimestamp } = useSettingStore();
+  const { mode, provider, searchProvider, update } = useSettingStore();
   const { modelList, refresh } = useModel();
   const pwaInstall = usePWAInstall();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -328,7 +328,7 @@ function Setting({ open, onClose }: SettingProps) {
       values.apiKey.trim() !== ""
     ) {
       setIsValidating(true);
-      setKeyStatus("validating");
+      update({ keyStatus: "validating" });
 
       try {
         const validationResult = await validateNewApiToken(
@@ -339,7 +339,6 @@ function Setting({ open, onClose }: SettingProps) {
         if (validationResult.success) {
           // 验证成功
           toast.success("NewAPI token validated successfully!");
-          setKeyStatus("validated");
 
           // 获取余额
           const balanceData = await getNewApiBalance(
@@ -347,30 +346,31 @@ function Setting({ open, onClose }: SettingProps) {
             values.apiProxy || "https://off.092420.xyz"
           );
 
-          if (balanceData) {
-            setBalance(balanceData.balance);
-            updateBalanceTimestamp();
-          }
+          // 一次性更新所有状态，确保同步
+          update({
+            ...values,
+            keyStatus: "validated",
+            balance: balanceData?.balance || 0,
+            lastBalanceUpdate: Date.now(),
+          });
 
           // 随机切换主题作为视觉反馈
           setRandomTheme();
 
-          // 保存配置
-          update(values);
           onClose();
         } else {
           // 验证失败
           toast.error(
             `Token validation failed: ${validationResult.message || "Unknown error"}`
           );
-          setKeyStatus("failed");
+          update({ keyStatus: "failed" });
           // 不保存配置，不关闭对话框
         }
       } catch (error) {
         toast.error(
           `Validation error: ${error instanceof Error ? error.message : "Unknown error"}`
         );
-        setKeyStatus("failed");
+        update({ keyStatus: "failed" });
       } finally {
         setIsValidating(false);
       }
