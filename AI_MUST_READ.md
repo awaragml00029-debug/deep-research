@@ -2,9 +2,45 @@
 
 ## NewAPI 集成关键要点
 
-### 1. 双重 API 格式架构 ⚠️ 极其重要
+### 1. modAI Provider 使用 Gemini 原生格式 ⚠️ 最重要
 
-NewAPI 代理服务器使用**两种不同的 API 格式**，必须分别处理：
+**关键理解：** modAI provider 必须使用 **Gemini 原生格式**，而不是 OpenAI 格式。
+
+#### 为什么 modAI 使用 Gemini 格式？
+
+modAI provider 是对 Google Generative AI SDK 的封装，连接到 NewAPI 代理服务器。虽然名为"NewAPI"，但 modAI 必须使用 Gemini 的原生 API 格式：
+
+- **SDK**: 使用 `@ai-sdk/google` 的 `createGoogleGenerativeAI`
+- **端点**: `/v1beta/models/{model}:generateContent`（Gemini 格式）
+- **认证**: `x-goog-api-key` 头部（Gemini 格式）
+- **请求体**: Gemini 原生请求格式
+- **响应**: Gemini 原生响应格式（`GeminiChatResponse`）
+
+#### modAI Provider 关键配置
+
+在任何需要区分 provider 的地方，modAI 必须与 google/google-vertex 归为一类：
+
+```typescript
+// ✅ 正确：modai 与 google 归为一类
+if (["google", "google-vertex", "modai"].includes(provider)) {
+  // 使用 Gemini 特性
+}
+
+// ❌ 错误：将 modai 与 OpenAI 归为一类
+if (["openai", "modai"].includes(provider)) {
+  // 这是错误的！
+}
+```
+
+**关键代码位置：**
+- `src/utils/deep-research/provider.ts:30-36` - modAI 使用 createGoogleGenerativeAI
+- `src/hooks/useDeepResearch.ts:75` - modAI 包含在 Gemini provider 检查中
+- `src/utils/deep-research/index.ts:98` - modAI 使用 Gemini search grounding
+- `src/app/api/ai/modai/[...slug]/route.ts:38-41` - 使用 x-goog-api-key 头部
+
+### 2. 双重 API 格式架构（仅用于余额查询）
+
+NewAPI 代理服务器在**余额查询**端点使用不同的格式：
 
 #### 验证端点（Validation）- Google AI Studio 格式
 ```typescript
@@ -18,17 +54,20 @@ headers: {
 #### 余额查询端点（Balance）- OpenAI 格式
 ```typescript
 // 端点: /v1/dashboard/billing/subscription 和 /v1/dashboard/billing/usage
-// 认证方式: Authorization Bearer 头部
+// 认证方式: Authorization Bearer 头部（注意：即使是 modAI provider 也用这个格式）
 headers: {
   "Authorization": `Bearer ${token}`
 }
 ```
 
+**重要说明：** 余额查询是 NewAPI 代理服务器特有的端点，不是 Google API 的一部分。因此即使是 modAI provider，余额查询也必须使用 OpenAI 格式的 Bearer token。
+
 **关键代码位置:**
 - `src/utils/newapi.ts:23-69` - validateNewApiToken 函数（支持自动检测格式）
 - `src/utils/newapi.ts:79-169` - getNewApiBalance 函数（强制使用 OpenAI 格式）
+- `src/components/Internal/BalanceButton.tsx:27-31` - 根据 provider 选择正确的 API key
 
-### 2. 余额查询必需参数
+### 3. 余额查询必需参数
 
 余额使用量 API **必须**包含日期范围参数，否则请求会失败：
 
@@ -45,7 +84,7 @@ const endDateStr = now.toISOString().split("T")[0];
 
 **参考实现:** `src/utils/newapi.ts:124-133`
 
-### 3. 余额计算逻辑
+### 4. 余额计算逻辑
 
 ```typescript
 // 1. 查询总额度
@@ -63,7 +102,7 @@ const balance = hardLimitUsd - totalUsage;
 **特殊情况:**
 - `hard_limit_usd === 100000000` 表示无限额度
 
-### 4. Provider 支持矩阵
+### 5. Provider 支持矩阵
 
 | Provider | API Key 字段 | API Proxy 字段 | 默认 Base URL | 支持余额查询 |
 |----------|-------------|---------------|--------------|------------|
@@ -76,7 +115,7 @@ const balance = hardLimitUsd - totalUsage;
 - `src/components/Internal/BalanceButton.tsx:27-34` - Provider 检测逻辑
 - `src/components/Setting.tsx:324-342` - 验证时的 Provider 检测
 
-### 5. 默认模型配置
+### 6. 默认模型配置
 
 所有 modAI provider 的默认模型已统一为 `gemini-2.5-flash`：
 
@@ -86,7 +125,7 @@ const balance = hardLimitUsd - totalUsage;
 3. `src/store/setting.ts` - Zustand store 默认值
 4. `.env.example` - 环境变量示例（如果存在）
 
-### 6. 主题和样式
+### 7. 主题和样式
 
 #### 背景色配置
 ```css
@@ -126,28 +165,36 @@ const balance = hardLimitUsd - totalUsage;
 
 关键提交记录：
 
-1. **4a094d6** - 添加余额查询日期范围参数
-2. **3b0c848** - 分离 API 格式并更新默认模型
-3. **bbedcea** - 添加 Google Generative AI API 格式支持
+1. **78cbfbb** - 添加 modAI 对 Gemini 原生特性的支持（search grounding）
+2. **a13be80** - 添加关键开发文档
+3. **4a094d6** - 添加余额查询日期范围参数
+4. **3b0c848** - 分离 API 格式并更新默认模型
+5. **bbedcea** - 添加 Google Generative AI API 格式支持
 
 ## 代码审查清单
 
-在修改 NewAPI 相关代码时，请确保：
+在修改 modAI/NewAPI 相关代码时，请确保：
 
-- [ ] 验证端点使用正确的认证格式（Google 或 OpenAI）
-- [ ] 余额查询始终使用 OpenAI 格式
-- [ ] 余额查询包含 start_date 和 end_date 参数
-- [ ] 支持 modai 和 openai provider
-- [ ] 默认 URL 配置正确
-- [ ] 错误处理完善（网络失败、API 错误等）
-- [ ] 更新所有配置文件中的默认模型
+- [ ] **modAI 使用 Gemini 格式**：在任何 provider 检查中，modai 必须与 google/google-vertex 归为一类
+- [ ] **验证端点格式**：验证端点使用正确的认证格式（Google 的 x-goog-api-key）
+- [ ] **余额查询格式**：余额查询始终使用 OpenAI 格式的 Authorization Bearer
+- [ ] **日期范围参数**：余额查询包含 start_date 和 end_date 参数
+- [ ] **Provider 支持**：支持 modai 和 openai provider 的余额查询
+- [ ] **默认配置**：默认 URL 配置正确（modai 用 Gemini base URL）
+- [ ] **错误处理**：错误处理完善（网络失败、API 错误等）
+- [ ] **默认模型**：更新所有配置文件中的默认模型
+- [ ] **Gemini 特性**：modai 可以使用 Gemini 原生特性（如 search grounding）
 
 ## 参考实现
 
 如需参考完整实现，请查看：
-- NewAPI 官方文档的 LogsTable 组件
-- OpenAI API 规范
-- Google Generative AI API 规范
+- **NewAPI Gemini Handler (Go)**: 提供了 Gemini 原生格式的完整处理示例
+  - 使用 `dto.GeminiChatResponse` 处理响应
+  - 使用 `UsageMetadata` 计算 token 使用量
+  - 直接发送 Gemini 格式响应，不转换为 OpenAI 格式
+- **NewAPI 官方文档**: LogsTable 组件展示了余额查询的完整实现
+- **OpenAI API 规范**: 余额查询端点格式参考
+- **Google Generative AI API 规范**: 验证端点和请求格式参考
 
 ---
 
