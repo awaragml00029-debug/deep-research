@@ -10,9 +10,12 @@
   "private": true,
   "scripts": {
     "dev": "NODE_OPTIONS='--no-deprecation' next dev --turbopack",
+    "dev:distribution": "NODE_OPTIONS='--no-deprecation' cross-env NEXT_PUBLIC_BUILD_VARIANT=distribution next dev --turbopack",
     "build": "next build",
     "build:standalone": "cross-env NEXT_PUBLIC_BUILD_MODE=standalone next build",
+    "build:standalone:distribution": "cross-env NEXT_PUBLIC_BUILD_MODE=standalone NEXT_PUBLIC_BUILD_VARIANT=distribution next build",
     "build:export": "cross-env NEXT_PUBLIC_BUILD_MODE=export next build",
+    "build:export:distribution": "cross-env NEXT_PUBLIC_BUILD_MODE=export NEXT_PUBLIC_BUILD_VARIANT=distribution next build",
     "start": "next start",
     "lint": "next lint"
   },

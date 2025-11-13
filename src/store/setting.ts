@@ -55,6 +55,10 @@ export interface SettingStore {
   accessPassword: string;
   thinkingModel: string;
   networkingModel: string;
+  modAIApiKey: string;
+  modAIApiProxy: string;
+  modAIThinkingModel: string;
+  modAINetworkingModel: string;
   enableSearch: string;
   searchProvider: string;
   tavilyApiKey: string;
@@ -95,12 +99,16 @@ interface SettingActions {
 }
 
 export const defaultValues: SettingStore = {
-  provider: "google",
-  mode: "",
+  provider: process.env.NEXT_PUBLIC_BUILD_VARIANT === "distribution" ? "modai" : "google",
+  mode: process.env.NEXT_PUBLIC_BUILD_VARIANT === "distribution" ? "local" : "",
   apiKey: "",
   apiProxy: "",
   thinkingModel: "gemini-2.5-pro",
   networkingModel: "gemini-2.5-flash",
+  modAIApiKey: "",
+  modAIApiProxy: process.env.NEXT_PUBLIC_MODAI_API_BASE_URL || "",
+  modAIThinkingModel: process.env.NEXT_PUBLIC_MODAI_THINKING_MODEL || "gemini-2.0-flash-thinking-exp-01-21",
+  modAINetworkingModel: process.env.NEXT_PUBLIC_MODAI_NETWORKING_MODEL || "gemini-2.0-flash-exp",
   googleVertexProject: "",
   googleVertexLocation: "",
   googleClientEmail: "",

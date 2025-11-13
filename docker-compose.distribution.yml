@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  deep-research-distribution:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_VARIANT: distribution
+        MODAI_API_BASE_URL: https://generativelanguage.googleapis.com
+        MODAI_THINKING_MODEL: gemini-2.0-flash-thinking-exp-01-21
+        MODAI_NETWORKING_MODEL: gemini-2.0-flash-exp
+    ports:
+      - "3000:3000"
+    environment:
+      # Server-side environment variables (can be overridden at runtime)
+      - MODAI_API_BASE_URL=https://generativelanguage.googleapis.com
+    restart: unless-stopped
+
+# Usage:
+# docker-compose -f docker-compose.distribution.yml up -d
+#
+# To build with custom modAI configuration:
+# docker-compose -f docker-compose.distribution.yml build --build-arg MODAI_API_BASE_URL=your-api-url --build-arg MODAI_THINKING_MODEL=your-model

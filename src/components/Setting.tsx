@@ -90,11 +90,13 @@ type SettingProps = {
 };
 
 const BUILD_MODE = process.env.NEXT_PUBLIC_BUILD_MODE;
+const BUILD_VARIANT = process.env.NEXT_PUBLIC_BUILD_VARIANT || "open";
 const VERSION = process.env.NEXT_PUBLIC_VERSION;
 const DISABLED_AI_PROVIDER = process.env.NEXT_PUBLIC_DISABLED_AI_PROVIDER || "";
 const DISABLED_SEARCH_PROVIDER =
   process.env.NEXT_PUBLIC_DISABLED_SEARCH_PROVIDER || "";
 const MODEL_LIST = process.env.NEXT_PUBLIC_MODEL_LIST || "";
+const IS_DISTRIBUTION = BUILD_VARIANT === "distribution";
 
 const formSchema = z.object({
   provider: z.string(),
@@ -103,6 +105,10 @@ const formSchema = z.object({
   apiProxy: z.string().optional(),
   thinkingModel: z.string().optional(),
   networkingModel: z.string().optional(),
+  modAIApiKey: z.string().optional(),
+  modAIApiProxy: z.string().optional(),
+  modAIThinkingModel: z.string().optional(),
+  modAINetworkingModel: z.string().optional(),
   googleVertexProject: z.string().optional(),
   googleVertexLocation: z.string().optional(),
   googleClientEmail: z.string().optional(),
@@ -465,7 +471,7 @@ function Setting({ open, onClose }: SettingProps) {
                 </TabsTrigger>
               </TabsList>
               <TabsContent className="space-y-4  min-h-[250px]" value="llm">
-                <div className={BUILD_MODE === "export" ? "hidden" : ""}>
+                <div className={BUILD_MODE === "export" || IS_DISTRIBUTION ? "hidden" : ""}>
                   <FormField
                     control={form.control}
                     name="mode"
@@ -523,56 +529,65 @@ function Setting({ open, onClose }: SettingProps) {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="max-sm:max-h-72">
-                            {!isDisabledAIProvider("google") ? (
-                              <SelectItem value="google">
-                                Google AI Studio
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("openai") ? (
-                              <SelectItem value="openai">OpenAI</SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("anthropic") ? (
-                              <SelectItem value="anthropic">
-                                Anthropic
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("deepseek") ? (
-                              <SelectItem value="deepseek">DeepSeek</SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("xai") ? (
-                              <SelectItem value="xai">xAI Grok</SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("mistral") ? (
-                              <SelectItem value="mistral">Mistral</SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("openaicompatible") ? (
-                              <SelectItem value="openaicompatible">
-                                {t("setting.openAICompatible")}
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("pollinations") ? (
-                              <SelectItem value="pollinations">
-                                Pollinations ({t("setting.free")})
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("azure") ? (
-                              <SelectItem value="azure">
-                                Azure OpenAI (Beta)
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("google-vertex") ? (
-                              <SelectItem value="google-vertex">
-                                Google Vertex (Alpha)
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("openrouter") ? (
-                              <SelectItem value="openrouter">
-                                OpenRouter
-                              </SelectItem>
-                            ) : null}
-                            {!isDisabledAIProvider("ollama") ? (
-                              <SelectItem value="ollama">Ollama</SelectItem>
-                            ) : null}
+                            {IS_DISTRIBUTION ? (
+                              <SelectItem value="modai">modAI</SelectItem>
+                            ) : (
+                              <>
+                                {!isDisabledAIProvider("google") ? (
+                                  <SelectItem value="google">
+                                    Google AI Studio
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("modai") ? (
+                                  <SelectItem value="modai">modAI</SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("openai") ? (
+                                  <SelectItem value="openai">OpenAI</SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("anthropic") ? (
+                                  <SelectItem value="anthropic">
+                                    Anthropic
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("deepseek") ? (
+                                  <SelectItem value="deepseek">DeepSeek</SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("xai") ? (
+                                  <SelectItem value="xai">xAI Grok</SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("mistral") ? (
+                                  <SelectItem value="mistral">Mistral</SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("openaicompatible") ? (
+                                  <SelectItem value="openaicompatible">
+                                    {t("setting.openAICompatible")}
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("pollinations") ? (
+                                  <SelectItem value="pollinations">
+                                    Pollinations ({t("setting.free")})
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("azure") ? (
+                                  <SelectItem value="azure">
+                                    Azure OpenAI (Beta)
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("google-vertex") ? (
+                                  <SelectItem value="google-vertex">
+                                    Google Vertex (Alpha)
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("openrouter") ? (
+                                  <SelectItem value="openrouter">
+                                    OpenRouter
+                                  </SelectItem>
+                                ) : null}
+                                {!isDisabledAIProvider("ollama") ? (
+                                  <SelectItem value="ollama">Ollama</SelectItem>
+                                ) : null}
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
                       </FormControl>
@@ -628,6 +643,39 @@ function Setting({ open, onClose }: SettingProps) {
                                 updateSetting(
                                   "apiProxy",
                                   form.getValues("apiProxy")
+                                )
+                              }
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div
+                    className={cn("space-y-4", {
+                      hidden: provider !== "modai",
+                    })}
+                  >
+                    <FormField
+                      control={form.control}
+                      name="modAIApiKey"
+                      render={({ field }) => (
+                        <FormItem className="from-item">
+                          <FormLabel className="from-label">
+                            {t("setting.apiKeyLabel")}
+                            <span className="ml-1 text-red-500 max-sm:hidden">
+                              *
+                            </span>
+                          </FormLabel>
+                          <FormControl className="form-field">
+                            <Password
+                              type="text"
+                              placeholder={t("setting.apiKeyPlaceholder")}
+                              {...field}
+                              onBlur={() =>
+                                updateSetting(
+                                  "modAIApiKey",
+                                  form.getValues("modAIApiKey")
                                 )
                               }
                             />

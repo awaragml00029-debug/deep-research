@@ -17,6 +17,18 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build arguments for customization
+ARG BUILD_VARIANT=open
+ARG MODAI_API_BASE_URL=https://generativelanguage.googleapis.com
+ARG MODAI_THINKING_MODEL=gemini-2.0-flash-thinking-exp-01-21
+ARG MODAI_NETWORKING_MODEL=gemini-2.0-flash-exp
+
+# Set environment variables for the build
+ENV NEXT_PUBLIC_BUILD_VARIANT=${BUILD_VARIANT}
+ENV NEXT_PUBLIC_MODAI_API_BASE_URL=${MODAI_API_BASE_URL}
+ENV NEXT_PUBLIC_MODAI_THINKING_MODEL=${MODAI_THINKING_MODEL}
+ENV NEXT_PUBLIC_MODAI_NETWORKING_MODEL=${MODAI_NETWORKING_MODEL}
+
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
@@ -28,8 +40,12 @@ RUN yarn run build:standalone
 FROM base AS runner
 WORKDIR /app
 
+# Runtime arguments (can be overridden at runtime)
+ARG MODAI_API_BASE_URL=https://generativelanguage.googleapis.com
+
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_BUILD_MODE=standalone
+ENV MODAI_API_BASE_URL=${MODAI_API_BASE_URL}
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

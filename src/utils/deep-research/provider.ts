@@ -27,6 +27,13 @@ export async function createAIProvider({
       apiKey,
     });
     return google(model, settings);
+  } else if (provider === "modai") {
+    const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
+    const modai = createGoogleGenerativeAI({
+      baseURL,
+      apiKey,
+    });
+    return modai(model, settings);
   } else if (provider === "google-vertex") {
     const { createVertex } = await import("@ai-sdk/google-vertex/edge");
     const googleVertexOptions: GoogleVertexProviderSettings = {};
