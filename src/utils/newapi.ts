@@ -17,19 +17,33 @@ export interface NewApiBalanceResponse {
  * 验证 NewAPI Token
  * @param token - NewAPI Token
  * @param baseUrl - NewAPI 基础 URL
+ * @param useGoogleFormat - 是否使用 Google API 格式（默认自动检测）
  * @returns 验证结果
  */
 export async function validateNewApiToken(
   token: string,
-  baseUrl: string = "https://off.092420.xyz"
+  baseUrl: string = "https://off.092420.xyz",
+  useGoogleFormat?: boolean
 ): Promise<NewApiValidationResponse> {
   try {
-    const response = await fetch(`${baseUrl}/v1/models`, {
+    // 自动检测：如果 baseUrl 包含 generativelanguage.googleapis.com，使用 Google 格式
+    const isGoogleApi = useGoogleFormat ?? baseUrl.includes("generativelanguage.googleapis.com");
+
+    const endpoint = isGoogleApi ? `${baseUrl}/v1beta/models` : `${baseUrl}/v1/models`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Google API 使用 x-goog-api-key，OpenAI 兼容 API 使用 Authorization Bearer
+    if (isGoogleApi) {
+      headers["x-goog-api-key"] = token;
+    } else {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(endpoint, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers,
     });
 
     if (response.status === 200) {
@@ -59,22 +73,36 @@ export async function validateNewApiToken(
  * 计算逻辑：剩余额度 = 总额度 - 已用额度
  * @param token - NewAPI Token
  * @param baseUrl - NewAPI 基础 URL
+ * @param useGoogleFormat - 是否使用 Google API 格式（默认自动检测）
  * @returns 余额信息
  */
 export async function getNewApiBalance(
   token: string,
-  baseUrl: string = "https://off.092420.xyz"
+  baseUrl: string = "https://off.092420.xyz",
+  useGoogleFormat?: boolean
 ): Promise<NewApiBalanceResponse | null> {
   try {
+    // 自动检测：如果 baseUrl 包含 generativelanguage.googleapis.com，使用 Google 格式
+    const isGoogleApi = useGoogleFormat ?? baseUrl.includes("generativelanguage.googleapis.com");
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Google API 使用 x-goog-api-key，OpenAI 兼容 API 使用 Authorization Bearer
+    if (isGoogleApi) {
+      headers["x-goog-api-key"] = token;
+    } else {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     // 1. 获取总额度 (hard_limit_usd)
+    // 注意：Google Generative AI API 没有 billing 端点，这仅适用于 OpenAI 兼容 API
     const subscriptionResponse = await fetch(
       `${baseUrl}/v1/dashboard/billing/subscription`,
       {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers,
       }
     );
 
@@ -102,10 +130,7 @@ export async function getNewApiBalance(
       `${baseUrl}/v1/dashboard/billing/usage`,
       {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers,
       }
     );
 
@@ -141,12 +166,14 @@ export async function getNewApiBalance(
  * 刷新余额（获取最新余额）
  * @param token - NewAPI Token
  * @param baseUrl - NewAPI 基础 URL
+ * @param useGoogleFormat - 是否使用 Google API 格式（默认自动检测）
  * @returns 余额信息
  */
 export async function refreshBalance(
   token: string,
-  baseUrl: string = "https://off.092420.xyz"
+  baseUrl: string = "https://off.092420.xyz",
+  useGoogleFormat?: boolean
 ): Promise<number> {
-  const balanceData = await getNewApiBalance(token, baseUrl);
+  const balanceData = await getNewApiBalance(token, baseUrl, useGoogleFormat);
   return balanceData?.balance ?? 0;
 }

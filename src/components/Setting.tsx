@@ -342,9 +342,15 @@ function Setting({ open, onClose }: SettingProps) {
       update({ keyStatus: "validating" });
 
       try {
+        // 确定正确的 API Base URL
+        const defaultApiUrl = isModAIProvider
+          ? (process.env.NEXT_PUBLIC_MODAI_API_BASE_URL || "https://generativelanguage.googleapis.com")
+          : "https://off.092420.xyz";
+        const apiBaseUrl = currentApiProxy || defaultApiUrl;
+
         const validationResult = await validateNewApiToken(
           currentApiKey,
-          currentApiProxy || "https://off.092420.xyz"
+          apiBaseUrl
         );
 
         if (validationResult.success) {
@@ -354,7 +360,7 @@ function Setting({ open, onClose }: SettingProps) {
           // 获取余额
           const balanceData = await getNewApiBalance(
             currentApiKey,
-            currentApiProxy || "https://off.092420.xyz"
+            apiBaseUrl
           );
 
           // 一次性更新所有状态，确保同步
