@@ -56,6 +56,7 @@ export async function validateNewApiToken(
 
 /**
  * 获取 NewAPI 账户余额
+ * 计算逻辑：剩余额度 = 总额度 - 已用额度
  * @param token - NewAPI Token
  * @param baseUrl - NewAPI 基础 URL
  * @returns 余额信息
@@ -65,34 +66,66 @@ export async function getNewApiBalance(
   baseUrl: string = "https://off.092420.xyz"
 ): Promise<NewApiBalanceResponse | null> {
   try {
-    // 查询用户信息（包含余额）
-    const response = await fetch(`${baseUrl}/api/user/self`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (response.status === 200) {
-      const data = await response.json();
-
-      // NewAPI 返回格式: { success: true, data: { quota: number, ... } }
-      if (data && data.success && data.data) {
-        const quota = data.data.quota || 0;
-        // quota 是整数，需要除以 500000 转换为美元
-        const balance = quota / 500000;
-
-        return {
-          balance: balance,
-          currency: "USD",
-        };
+    // 1. 获取总额度 (hard_limit_usd)
+    const subscriptionResponse = await fetch(
+      `${baseUrl}/v1/dashboard/billing/subscription`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
+    );
+
+    if (subscriptionResponse.status !== 200) {
+      console.error("Failed to fetch subscription");
+      return {
+        balance: 0,
+        currency: "USD",
+      };
     }
 
-    // 如果查询失败，返回 0
+    const subscriptionData = await subscriptionResponse.json();
+    const hardLimitUsd = subscriptionData.hard_limit_usd || 100; // 满额默认100
+
+    // 特殊情况：100000000 表示无限额度
+    if (hardLimitUsd === 100000000) {
+      return {
+        balance: Infinity,
+        currency: "USD",
+      };
+    }
+
+    // 2. 获取已用额度 (total_usage / 100)
+    const usageResponse = await fetch(
+      `${baseUrl}/v1/dashboard/billing/usage`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (usageResponse.status !== 200) {
+      console.error("Failed to fetch usage");
+      // 如果获取使用量失败，返回总额度
+      return {
+        balance: hardLimitUsd,
+        currency: "USD",
+      };
+    }
+
+    const usageData = await usageResponse.json();
+    const totalUsage = (usageData.total_usage || 0) / 100;
+
+    // 3. 计算剩余额度
+    const remainingBalance = hardLimitUsd - totalUsage;
+
     return {
-      balance: 0,
+      balance: Math.max(0, remainingBalance), // 确保不为负数
       currency: "USD",
     };
   } catch (error) {

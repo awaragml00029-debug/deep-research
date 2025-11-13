@@ -53,11 +53,6 @@
     --chart-5: 27 87% 67%;
 
     --radius: 0.5rem;
-
-    /* 主题颜色变量 - 默认海洋蓝 */
-    --theme-primary: #3b82f6;
-    --theme-secondary: #2563eb;
-    --theme-accent: #1d4ed8;
   }
   .dark {
     --background: 222.2 84% 4.9%;
@@ -107,11 +102,6 @@
     --chart-4: 280 65% 60%;
 
     --chart-5: 340 75% 55%;
-
-    /* 主题颜色变量 - 默认海洋蓝 */
-    --theme-primary: #3b82f6;
-    --theme-secondary: #2563eb;
-    --theme-accent: #1d4ed8;
   }
 }
 
