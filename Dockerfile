@@ -20,8 +20,8 @@ COPY . .
 # Build arguments for customization
 ARG BUILD_VARIANT=open
 ARG MODAI_API_BASE_URL=https://generativelanguage.googleapis.com
-ARG MODAI_THINKING_MODEL=gemini-2.0-flash-thinking-exp-01-21
-ARG MODAI_NETWORKING_MODEL=gemini-2.0-flash-exp
+ARG MODAI_THINKING_MODEL=gemini-2.5-flash
+ARG MODAI_NETWORKING_MODEL=gemini-2.5-flash
 
 # Set environment variables for the build
 ENV NEXT_PUBLIC_BUILD_VARIANT=${BUILD_VARIANT}

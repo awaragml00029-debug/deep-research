@@ -97,8 +97,8 @@ case $build_choice in
         print_warning "这是用于深度思考和复杂推理的模型"
         print_warning "This is the model for deep thinking and complex reasoning"
         echo ""
-        read -p "请输入 Thinking Model (默认: gemini-2.0-flash-thinking-exp-01-21): " thinking_model
-        thinking_model=${thinking_model:-gemini-2.0-flash-thinking-exp-01-21}
+        read -p "请输入 Thinking Model (默认: gemini-2.5-flash): " thinking_model
+        thinking_model=${thinking_model:-gemini-2.5-flash}
 
         print_success "Thinking Model: $thinking_model"
         echo ""
@@ -110,8 +110,8 @@ case $build_choice in
         print_warning "这是用于网络搜索和快速任务的模型"
         print_warning "This is the model for web search and quick tasks"
         echo ""
-        read -p "请输入 Networking Model (默认: gemini-2.0-flash-exp): " networking_model
-        networking_model=${networking_model:-gemini-2.0-flash-exp}
+        read -p "请输入 Networking Model (默认: gemini-2.5-flash): " networking_model
+        networking_model=${networking_model:-gemini-2.5-flash}
 
         print_success "Networking Model: $networking_model"
         echo ""
