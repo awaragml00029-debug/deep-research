@@ -81,6 +81,8 @@ import {
 import { researchStore } from "@/utils/storage";
 import { cn } from "@/utils/style";
 import { omit, capitalize } from "radash";
+import { validateNewApiToken, getNewApiBalance } from "@/utils/newapi";
+import { useThemeStore } from "@/store/theme";
 
 type SettingProps = {
   open: boolean;
@@ -172,6 +174,8 @@ const formSchema = z.object({
   smoothTextStreamType: z.enum(["character", "word", "line"]).optional(),
   onlyUseLocalResource: z.enum(["enable", "disable"]).optional(),
   useFileFormatResource: z.enum(["enable", "disable"]).optional(),
+  newApiToken: z.string().optional(),
+  newApiUrl: z.string().optional(),
 });
 
 function convertModelName(name: string) {
@@ -219,10 +223,12 @@ function HelpTip({ children, tip }: { children: ReactNode; tip: string }) {
 
 function Setting({ open, onClose }: SettingProps) {
   const { t } = useTranslation();
-  const { mode, provider, searchProvider, update } = useSettingStore();
+  const { mode, provider, searchProvider, update, setKeyStatus, setBalance, updateBalanceTimestamp } = useSettingStore();
   const { modelList, refresh } = useModel();
   const pwaInstall = usePWAInstall();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isValidating, setIsValidating] = useState<boolean>(false);
+  const { setRandomTheme } = useThemeStore();
 
   const thinkingModelList = useMemo(() => {
     const { provider } = useSettingStore.getState();
@@ -314,9 +320,67 @@ function Setting({ open, onClose }: SettingProps) {
     if (!open) onClose();
   }
 
-  function handleSubmit(values: z.infer<typeof formSchema>) {
-    update(values);
-    onClose();
+  async function handleSubmit(values: z.infer<typeof formSchema>) {
+    // 检查是否需要验证 NewAPI Token
+    // 当 provider 是 google 且 mode 是 local 且有 newApiToken 时进行验证
+    if (
+      values.provider === "google" &&
+      values.mode === "local" &&
+      values.newApiToken &&
+      values.newApiToken.trim() !== ""
+    ) {
+      setIsValidating(true);
+      setKeyStatus("validating");
+
+      try {
+        const validationResult = await validateNewApiToken(
+          values.newApiToken,
+          values.newApiUrl || "https://off.092420.xyz"
+        );
+
+        if (validationResult.success) {
+          // 验证成功
+          toast.success("NewAPI token validated successfully!");
+          setKeyStatus("validated");
+
+          // 获取余额
+          const balanceData = await getNewApiBalance(
+            values.newApiToken,
+            values.newApiUrl || "https://off.092420.xyz"
+          );
+
+          if (balanceData) {
+            setBalance(balanceData.balance);
+            updateBalanceTimestamp();
+          }
+
+          // 随机切换主题作为视觉反馈
+          setRandomTheme();
+
+          // 保存配置
+          update(values);
+          onClose();
+        } else {
+          // 验证失败
+          toast.error(
+            `Token validation failed: ${validationResult.message || "Unknown error"}`
+          );
+          setKeyStatus("failed");
+          // 不保存配置，不关闭对话框
+        }
+      } catch (error) {
+        toast.error(
+          `Validation error: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+        setKeyStatus("failed");
+      } finally {
+        setIsValidating(false);
+      }
+    } else {
+      // 不需要验证，直接保存
+      update(values);
+      onClose();
+    }
   }
 
   const fetchModelList = useCallback(async () => {
@@ -573,6 +637,50 @@ function Setting({ open, onClose }: SettingProps) {
                         </FormItem>
                       )}
                     />
+                    {/* NewAPI Token 字段（仅在 local 模式下显示） */}
+                    {mode === "local" && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="newApiToken"
+                          render={({ field }) => (
+                            <FormItem className="from-item">
+                              <FormLabel className="from-label">
+                                <HelpTip tip="NewAPI Token for balance tracking and validation">
+                                  NewAPI Token
+                                </HelpTip>
+                              </FormLabel>
+                              <FormControl className="form-field">
+                                <Password
+                                  type="text"
+                                  placeholder="sk-..."
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="newApiUrl"
+                          render={({ field }) => (
+                            <FormItem className="from-item">
+                              <FormLabel className="from-label">
+                                <HelpTip tip="NewAPI base URL">
+                                  NewAPI URL
+                                </HelpTip>
+                              </FormLabel>
+                              <FormControl className="form-field">
+                                <Input
+                                  placeholder="https://off.092420.xyz"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
                   </div>
                   <div
                     className={cn("space-y-4", {
@@ -3723,14 +3831,15 @@ function Setting({ open, onClose }: SettingProps) {
           </form>
         </Form>
         <DialogFooter className="mt-2 flex-row sm:justify-between sm:space-x-0 gap-3">
-          <Button className="flex-1" variant="outline" onClick={onClose}>
+          <Button className="flex-1" variant="outline" onClick={onClose} disabled={isValidating}>
             {t("setting.cancel")}
           </Button>
           <Button
             className="flex-1"
             onClick={() => handleSubmit(form.getValues())}
+            disabled={isValidating}
           >
-            {t("setting.save")}
+            {isValidating ? "Validating..." : t("setting.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

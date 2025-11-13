@@ -80,11 +80,20 @@ export interface SettingStore {
   smoothTextStreamType: "character" | "word" | "line";
   onlyUseLocalResource: "enable" | "disable";
   useFileFormatResource: "enable" | "disable";
+  // NewAPI 相关配置
+  newApiToken: string;
+  newApiUrl: string;
+  keyStatus: "unset" | "validating" | "validated" | "failed";
+  balance: number;
+  lastBalanceUpdate: number;
 }
 
 interface SettingActions {
   update: (values: Partial<SettingStore>) => void;
   reset: () => void;
+  setKeyStatus: (status: "unset" | "validating" | "validated" | "failed") => void;
+  setBalance: (balance: number) => void;
+  updateBalanceTimestamp: () => void;
 }
 
 export const defaultValues: SettingStore = {
@@ -166,6 +175,12 @@ export const defaultValues: SettingStore = {
   smoothTextStreamType: "word",
   onlyUseLocalResource: "disable",
   useFileFormatResource: "disable",
+  // NewAPI 默认配置
+  newApiToken: "",
+  newApiUrl: "https://off.092420.xyz",
+  keyStatus: "unset",
+  balance: 0,
+  lastBalanceUpdate: 0,
 };
 
 export const useSettingStore = create(
@@ -174,6 +189,9 @@ export const useSettingStore = create(
       ...defaultValues,
       update: (values) => set(values),
       reset: () => set(defaultValues),
+      setKeyStatus: (status) => set({ keyStatus: status }),
+      setBalance: (balance) => set({ balance }),
+      updateBalanceTimestamp: () => set({ lastBalanceUpdate: Date.now() }),
     }),
     { name: "setting" }
   )

@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Settings, Github, History, BookText } from "lucide-react";
 import { Button } from "@/components/Internal/Button";
 import { useGlobalStore } from "@/store/global";
+import BalanceButton from "@/components/Internal/BalanceButton";
+import ThemeSelector from "@/components/Internal/ThemeSelector";
 
 const VERSION = process.env.NEXT_PUBLIC_VERSION;
 
@@ -19,7 +21,14 @@ function Header() {
             <small className="ml-2 font-normal text-base">v{VERSION}</small>
           </h1>
         </a>
-        <div className="flex">
+        <div className="flex items-center gap-2">
+          {/* 余额按钮 */}
+          <BalanceButton />
+
+          {/* 主题选择器 */}
+          <ThemeSelector />
+
+          {/* GitHub 链接 */}
           <a href="https://github.com/u14app/deep-research" target="_blank">
             <Button
               className="h-8 w-8"
@@ -30,6 +39,8 @@ function Header() {
               <Github className="h-5 w-5" />
             </Button>
           </a>
+
+          {/* 历史记录 */}
           <Button
             className="h-8 w-8"
             variant="ghost"
@@ -39,6 +50,8 @@ function Header() {
           >
             <History className="h-5 w-5" />
           </Button>
+
+          {/* 知识库 */}
           <Button
             className="h-8 w-8"
             variant="ghost"
@@ -48,6 +61,8 @@ function Header() {
           >
             <BookText />
           </Button>
+
+          {/* 设置 */}
           <Button
             className="h-8 w-8"
             title={t("setting.title")}
