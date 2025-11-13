@@ -162,7 +162,7 @@ export const defaultValues: SettingStore = {
   bochaApiProxy: "",
   searxngApiProxy: "",
   searxngScope: "all",
-  parallelSearch: 1,
+  parallelSearch: 3,
   searchMaxResult: 5,
   crawler: "jina",
   language: "",
