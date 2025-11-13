@@ -13,8 +13,8 @@ export default function BalanceButton() {
   const {
     keyStatus,
     balance,
-    newApiToken,
-    newApiUrl,
+    apiKey,
+    apiProxy,
     setBalance,
     updateBalanceTimestamp,
   } = useSettingStore();
@@ -23,7 +23,7 @@ export default function BalanceButton() {
 
   // 自动刷新余额
   useEffect(() => {
-    if (keyStatus !== "validated" || !newApiToken) {
+    if (keyStatus !== "validated" || !apiKey) {
       return;
     }
 
@@ -37,15 +37,15 @@ export default function BalanceButton() {
 
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyStatus, newApiToken]);
+  }, [keyStatus, apiKey]);
 
   const handleRefreshBalance = async (silent = false) => {
-    if (isRefreshing || !newApiToken) return;
+    if (isRefreshing || !apiKey) return;
 
     setIsRefreshing(true);
 
     try {
-      const newBalance = await refreshBalance(newApiToken, newApiUrl);
+      const newBalance = await refreshBalance(apiKey, apiProxy || "https://off.092420.xyz");
       setBalance(newBalance);
       updateBalanceTimestamp();
 
@@ -64,7 +64,8 @@ export default function BalanceButton() {
 
   const handleBalanceClick = () => {
     if (keyStatus === "validated" && balance <= BALANCE_THRESHOLD) {
-      window.open(`${newApiUrl}/topup`, "_blank");
+      const baseUrl = apiProxy || "https://off.092420.xyz";
+      window.open(`${baseUrl}/topup`, "_blank");
     }
   };
 
@@ -89,11 +90,11 @@ export default function BalanceButton() {
     return (
       <div className="flex items-center gap-2">
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 cursor-default"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 cursor-default"
           title={`Balance: $${balance.toFixed(2)}`}
         >
           <span className="text-lg">💰</span>
-          <span className="text-sm font-medium">${balance.toFixed(2)}</span>
+          <span className="text-sm font-medium text-amber-600 dark:text-amber-400">${balance.toFixed(2)}</span>
         </div>
         {/* 刷新按钮 */}
         <button

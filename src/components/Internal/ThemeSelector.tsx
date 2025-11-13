@@ -62,9 +62,9 @@ export default function ThemeSelector() {
                 >
                   {/* 颜色圆圈 */}
                   <div
-                    className={`w-10 h-10 rounded-full transition-all duration-200 ${
+                    className={`w-6 h-6 rounded-full transition-all duration-200 ${
                       isActive
-                        ? "ring-4 ring-offset-2 ring-offset-background scale-110"
+                        ? "ring-2 ring-offset-2 ring-offset-background scale-110"
                         : "hover:scale-105"
                     }`}
                     style={{

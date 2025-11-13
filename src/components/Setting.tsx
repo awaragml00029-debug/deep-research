@@ -174,8 +174,6 @@ const formSchema = z.object({
   smoothTextStreamType: z.enum(["character", "word", "line"]).optional(),
   onlyUseLocalResource: z.enum(["enable", "disable"]).optional(),
   useFileFormatResource: z.enum(["enable", "disable"]).optional(),
-  newApiToken: z.string().optional(),
-  newApiUrl: z.string().optional(),
 });
 
 function convertModelName(name: string) {
@@ -322,20 +320,20 @@ function Setting({ open, onClose }: SettingProps) {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     // 检查是否需要验证 NewAPI Token
-    // 当 provider 是 google 且 mode 是 local 且有 newApiToken 时进行验证
+    // 当 provider 是 google 且 mode 是 local 且有 apiKey 时进行验证
     if (
       values.provider === "google" &&
       values.mode === "local" &&
-      values.newApiToken &&
-      values.newApiToken.trim() !== ""
+      values.apiKey &&
+      values.apiKey.trim() !== ""
     ) {
       setIsValidating(true);
       setKeyStatus("validating");
 
       try {
         const validationResult = await validateNewApiToken(
-          values.newApiToken,
-          values.newApiUrl || "https://off.092420.xyz"
+          values.apiKey,
+          values.apiProxy || "https://off.092420.xyz"
         );
 
         if (validationResult.success) {
@@ -345,8 +343,8 @@ function Setting({ open, onClose }: SettingProps) {
 
           // 获取余额
           const balanceData = await getNewApiBalance(
-            values.newApiToken,
-            values.newApiUrl || "https://off.092420.xyz"
+            values.apiKey,
+            values.apiProxy || "https://off.092420.xyz"
           );
 
           if (balanceData) {
@@ -637,50 +635,6 @@ function Setting({ open, onClose }: SettingProps) {
                         </FormItem>
                       )}
                     />
-                    {/* NewAPI Token 字段（仅在 local 模式下显示） */}
-                    {mode === "local" && (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="newApiToken"
-                          render={({ field }) => (
-                            <FormItem className="from-item">
-                              <FormLabel className="from-label">
-                                <HelpTip tip="NewAPI Token for balance tracking and validation">
-                                  NewAPI Token
-                                </HelpTip>
-                              </FormLabel>
-                              <FormControl className="form-field">
-                                <Password
-                                  type="text"
-                                  placeholder="sk-..."
-                                  {...field}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="newApiUrl"
-                          render={({ field }) => (
-                            <FormItem className="from-item">
-                              <FormLabel className="from-label">
-                                <HelpTip tip="NewAPI base URL">
-                                  NewAPI URL
-                                </HelpTip>
-                              </FormLabel>
-                              <FormControl className="form-field">
-                                <Input
-                                  placeholder="https://off.092420.xyz"
-                                  {...field}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </>
-                    )}
                   </div>
                   <div
                     className={cn("space-y-4", {

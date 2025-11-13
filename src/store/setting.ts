@@ -80,9 +80,7 @@ export interface SettingStore {
   smoothTextStreamType: "character" | "word" | "line";
   onlyUseLocalResource: "enable" | "disable";
   useFileFormatResource: "enable" | "disable";
-  // NewAPI 相关配置
-  newApiToken: string;
-  newApiUrl: string;
+  // NewAPI 验证状态和余额
   keyStatus: "unset" | "validating" | "validated" | "failed";
   balance: number;
   lastBalanceUpdate: number;
@@ -175,9 +173,7 @@ export const defaultValues: SettingStore = {
   smoothTextStreamType: "word",
   onlyUseLocalResource: "disable",
   useFileFormatResource: "disable",
-  // NewAPI 默认配置
-  newApiToken: "",
-  newApiUrl: "https://off.092420.xyz",
+  // NewAPI 验证状态和余额默认值
   keyStatus: "unset",
   balance: 0,
   lastBalanceUpdate: 0,
