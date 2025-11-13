@@ -9,7 +9,7 @@
   "bugs": "https://github.com/u14app/deep-research/issues",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NODE_OPTIONS='--no-deprecation' next dev --turbopack",
     "build": "next build",
     "build:standalone": "cross-env NEXT_PUBLIC_BUILD_MODE=standalone next build",
     "build:export": "cross-env NEXT_PUBLIC_BUILD_MODE=export next build",
