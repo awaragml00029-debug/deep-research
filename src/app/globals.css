@@ -145,3 +145,42 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* 主题颜色应用 - 只在验证后（有data-theme属性时）生效 */
+[data-theme] button:hover:not(:disabled),
+[data-theme] a:hover {
+  color: var(--theme-primary);
+}
+
+[data-theme] button:active:not(:disabled),
+[data-theme] a:active {
+  color: var(--theme-secondary);
+}
+
+[data-theme] input:focus,
+[data-theme] textarea:focus,
+[data-theme] select:focus {
+  border-color: var(--theme-primary);
+  outline-color: var(--theme-primary);
+}
+
+[data-theme] .text-primary {
+  color: var(--theme-primary);
+}
+
+[data-theme] .border-primary {
+  border-color: var(--theme-primary);
+}
+
+[data-theme] .bg-primary {
+  background-color: var(--theme-primary);
+}
+
+/* 链接和按钮过渡效果 */
+a {
+  transition: color 0.2s ease-in-out;
+}
+
+button {
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
