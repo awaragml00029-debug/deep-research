@@ -10,6 +10,8 @@ export interface NewApiValidationResponse {
 
 export interface NewApiBalanceResponse {
   balance: number;
+  total: number;
+  used: number;
   currency?: string;
 }
 
@@ -100,6 +102,8 @@ export async function getNewApiBalance(
       console.error("Failed to fetch subscription");
       return {
         balance: 0,
+        total: 100,
+        used: 0,
         currency: "USD",
       };
     }
@@ -111,13 +115,21 @@ export async function getNewApiBalance(
     if (hardLimitUsd === 100000000) {
       return {
         balance: Infinity,
+        total: Infinity,
+        used: 0,
         currency: "USD",
       };
     }
 
     // 2. 获取已用额度 (total_usage / 100)
+    // 构造时间范围：过去100天到今天
+    const now = new Date();
+    const startDate = new Date(now.getTime() - 100 * 24 * 60 * 60 * 1000);
+    const startDateStr = startDate.toISOString().split("T")[0];
+    const endDateStr = now.toISOString().split("T")[0];
+
     const usageResponse = await fetch(
-      `${baseUrl}/v1/dashboard/billing/usage`,
+      `${baseUrl}/v1/dashboard/billing/usage?start_date=${startDateStr}&end_date=${endDateStr}`,
       {
         method: "GET",
         headers,
@@ -129,6 +141,8 @@ export async function getNewApiBalance(
       // 如果获取使用量失败，返回总额度
       return {
         balance: hardLimitUsd,
+        total: hardLimitUsd,
+        used: 0,
         currency: "USD",
       };
     }
@@ -141,12 +155,16 @@ export async function getNewApiBalance(
 
     return {
       balance: Math.max(0, remainingBalance), // 确保不为负数
+      total: hardLimitUsd,
+      used: totalUsage,
       currency: "USD",
     };
   } catch (error) {
     console.error("Failed to get NewAPI balance:", error);
     return {
       balance: 0,
+      total: 100,
+      used: 0,
       currency: "USD",
     };
   }

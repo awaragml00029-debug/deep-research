@@ -11,19 +11,31 @@ const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5分钟
 
 export default function BalanceButton() {
   const {
+    provider,
     keyStatus,
     balance,
     apiKey,
     apiProxy,
+    modAIApiKey,
+    modAIApiProxy,
     setBalance,
     updateBalanceTimestamp,
   } = useSettingStore();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // 根据 provider 选择正确的 API Key 和 Proxy
+  const currentApiKey = provider === "modai" ? modAIApiKey : apiKey;
+  const currentApiProxy = provider === "modai"
+    ? (modAIApiProxy || "https://generativelanguage.googleapis.com")
+    : (apiProxy || "https://off.092420.xyz");
+
+  // 只有 modai 和 openai provider 才显示余额按钮
+  const shouldShowBalance = provider === "modai" || provider === "openai";
+
   // 自动刷新余额
   useEffect(() => {
-    if (keyStatus !== "validated" || !apiKey) {
+    if (!shouldShowBalance || keyStatus !== "validated" || !currentApiKey) {
       return;
     }
 
@@ -37,15 +49,15 @@ export default function BalanceButton() {
 
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyStatus, apiKey]);
+  }, [keyStatus, currentApiKey, shouldShowBalance]);
 
   const handleRefreshBalance = async (silent = false) => {
-    if (isRefreshing || !apiKey) return;
+    if (isRefreshing || !currentApiKey) return;
 
     setIsRefreshing(true);
 
     try {
-      const newBalance = await refreshBalance(apiKey, apiProxy || "https://off.092420.xyz");
+      const newBalance = await refreshBalance(currentApiKey, currentApiProxy);
       setBalance(newBalance);
       updateBalanceTimestamp();
 
@@ -64,10 +76,14 @@ export default function BalanceButton() {
 
   const handleBalanceClick = () => {
     if (keyStatus === "validated" && balance <= BALANCE_THRESHOLD) {
-      const baseUrl = apiProxy || "https://off.092420.xyz";
-      window.open(`${baseUrl}/topup`, "_blank");
+      window.open(`${currentApiProxy}/topup`, "_blank");
     }
   };
+
+  // 不支持余额查询的 provider 不显示按钮
+  if (!shouldShowBalance) {
+    return null;
+  }
 
   // 未验证状态
   if (keyStatus !== "validated") {
