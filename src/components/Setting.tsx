@@ -236,7 +236,7 @@ function Setting({ open, onClose }: SettingProps) {
 
   const thinkingModelList = useMemo(() => {
     const { provider } = useSettingStore.getState();
-    if (provider === "google") {
+    if (provider === "google" || provider === "modai") {
       return filterThinkingModelList(modelList);
     } else if (provider === "openrouter") {
       return filterOpenRouterModelList(modelList);
@@ -251,7 +251,7 @@ function Setting({ open, onClose }: SettingProps) {
   }, [modelList]);
   const networkingModelList = useMemo(() => {
     const { provider } = useSettingStore.getState();
-    if (provider === "google") {
+    if (provider === "google" || provider === "modai") {
       return filterNetworkingModelList(modelList);
     } else if (provider === "openrouter") {
       return filterOpenRouterModelList(modelList);
