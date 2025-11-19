@@ -197,6 +197,28 @@ export const useSettingStore = create(
       setBalance: (balance) => set({ balance }),
       updateBalanceTimestamp: () => set({ lastBalanceUpdate: Date.now() }),
     }),
-    { name: "setting" }
+    {
+      name: "setting",
+      // 合并策略：始终使用环境变量的模型配置，不使用 localStorage 中保存的值
+      merge: (persistedState, currentState) => {
+        const merged = {
+          ...currentState,
+          ...(persistedState as Partial<SettingStore>),
+        };
+
+        // 强制使用环境变量中的模型配置（如果存在）
+        if (process.env.NEXT_PUBLIC_MODAI_THINKING_MODEL) {
+          merged.modAIThinkingModel = process.env.NEXT_PUBLIC_MODAI_THINKING_MODEL;
+        }
+        if (process.env.NEXT_PUBLIC_MODAI_NETWORKING_MODEL) {
+          merged.modAINetworkingModel = process.env.NEXT_PUBLIC_MODAI_NETWORKING_MODEL;
+        }
+        if (process.env.NEXT_PUBLIC_MODAI_API_BASE_URL) {
+          merged.modAIApiProxy = process.env.NEXT_PUBLIC_MODAI_API_BASE_URL;
+        }
+
+        return merged;
+      },
+    }
   )
 );
