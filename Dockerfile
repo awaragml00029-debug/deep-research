@@ -41,11 +41,17 @@ FROM base AS runner
 WORKDIR /app
 
 # Runtime arguments (can be overridden at runtime)
+ARG BUILD_VARIANT=open
 ARG MODAI_API_BASE_URL=https://generativelanguage.googleapis.com
+ARG MODAI_THINKING_MODEL=gemini-2.5-flash
+ARG MODAI_NETWORKING_MODEL=gemini-2.5-flash
 
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_BUILD_MODE=standalone
-ENV MODAI_API_BASE_URL=${MODAI_API_BASE_URL}
+ENV NEXT_PUBLIC_BUILD_VARIANT=${BUILD_VARIANT}
+ENV NEXT_PUBLIC_MODAI_API_BASE_URL=${MODAI_API_BASE_URL}
+ENV NEXT_PUBLIC_MODAI_THINKING_MODEL=${MODAI_THINKING_MODEL}
+ENV NEXT_PUBLIC_MODAI_NETWORKING_MODEL=${MODAI_NETWORKING_MODEL}
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
