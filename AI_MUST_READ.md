@@ -120,10 +120,52 @@ const balance = hardLimitUsd - totalUsage;
 所有 modAI provider 的默认模型已统一为 `gemini-2.5-flash`：
 
 **需要同步更新的文件:**
-1. `Dockerfile` - ARG 变量
+1. `Dockerfile` - ARG 变量（builder 和 runner 阶段都需要）
 2. `build-docker.sh` - 交互式提示默认值
 3. `src/store/setting.ts` - Zustand store 默认值
 4. `.env.example` - 环境变量示例（如果存在）
+
+#### 重要：localStorage 缓存问题 ⚠️
+
+**问题症状：**
+- 重新构建 Docker 镜像并设置了新的模型配置
+- 但浏览器中看到的还是旧的模型配置
+- 需要清除浏览器缓存或使用隐私模式才能看到新配置
+
+**根本原因：**
+Zustand 的 persist 中间件会将所有设置保存到浏览器的 localStorage 中。当用户重新访问应用时，persist 会从 localStorage 恢复之前保存的设置，这些设置会覆盖环境变量中的默认值。
+
+**解决方案：**
+在 `src/store/setting.ts` 中添加了自定义 merge 策略，确保环境变量中的模型配置始终优先：
+
+```typescript
+{
+  name: "setting",
+  merge: (persistedState, currentState) => {
+    const merged = {
+      ...currentState,
+      ...(persistedState as Partial<SettingStore>),
+    };
+
+    // 强制使用环境变量中的模型配置
+    if (process.env.NEXT_PUBLIC_MODAI_THINKING_MODEL) {
+      merged.modAIThinkingModel = process.env.NEXT_PUBLIC_MODAI_THINKING_MODEL;
+    }
+    if (process.env.NEXT_PUBLIC_MODAI_NETWORKING_MODEL) {
+      merged.modAINetworkingModel = process.env.NEXT_PUBLIC_MODAI_NETWORKING_MODEL;
+    }
+    if (process.env.NEXT_PUBLIC_MODAI_API_BASE_URL) {
+      merged.modAIApiProxy = process.env.NEXT_PUBLIC_MODAI_API_BASE_URL;
+    }
+
+    return merged;
+  },
+}
+```
+
+这样，即使 localStorage 中有旧的配置，环境变量的值也会强制覆盖，无需清除浏览器缓存。
+
+**关键代码位置:** `src/store/setting.ts:200-222`
 
 ### 7. 主题和样式
 
@@ -160,6 +202,23 @@ const balance = hardLimitUsd - totalUsage;
 2. 使用了错误的端点（应该是 /v1beta/models 或 /v1/models）
 
 **解决方案:** 检查 `src/utils/newapi.ts:29-32` 的自动检测逻辑
+
+### 问题 4: Docker 构建后模型配置没有生效 ⚠️ 最常见
+**症状:**
+- 运行 `build-docker.sh` 时设置了自定义 thinking/networking model
+- 但启动容器后，浏览器中看到的还是默认的 gemini-2.5-flash
+- 需要清除浏览器缓存或使用隐私模式才能看到新配置
+
+**根本原因:**
+Zustand persist 中间件会将设置保存到浏览器 localStorage，旧的 localStorage 数据会覆盖新的环境变量配置。
+
+**解决方案:**
+已在 `src/store/setting.ts:200-222` 中添加自定义 merge 策略，环境变量配置会强制覆盖 localStorage。更新到最新代码后无需清除缓存。
+
+**临时解决方案（如果使用旧版本）:**
+1. 清除浏览器缓存和 localStorage
+2. 或使用隐私/无痕模式打开
+3. 或在浏览器开发者工具中手动删除 localStorage 中的 "setting" key
 
 ## Git Commit 历史
 
