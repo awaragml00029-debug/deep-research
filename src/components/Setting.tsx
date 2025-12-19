@@ -93,6 +93,7 @@ const DISABLED_AI_PROVIDER = process.env.NEXT_PUBLIC_DISABLED_AI_PROVIDER || "";
 const DISABLED_SEARCH_PROVIDER =
   process.env.NEXT_PUBLIC_DISABLED_SEARCH_PROVIDER || "";
 const MODEL_LIST = process.env.NEXT_PUBLIC_MODEL_LIST || "";
+const DIST_MODE = process.env.NEXT_PUBLIC_DIST_MODE || ""; // "proxy" | "local" | ""
 
 const formSchema = z.object({
   provider: z.string(),
@@ -403,6 +404,87 @@ function Setting({ open, onClose }: SettingProps) {
                 </TabsTrigger>
               </TabsList>
               <TabsContent className="space-y-4  min-h-[250px]" value="llm">
+                {DIST_MODE === "proxy" ? (
+                  // 分发版 Proxy 模式：只显示访问密码
+                  <FormField
+                    control={form.control}
+                    name="accessPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("setting.accessPassword") || "Access Password"}</FormLabel>
+                        <FormControl>
+                          <Password
+                            placeholder={t("setting.accessPasswordPlaceholder") || "Enter password"}
+                            {...field}
+                            onBlur={() =>
+                              updateSetting(
+                                "accessPassword",
+                                form.getValues("accessPassword")
+                              )
+                            }
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                ) : DIST_MODE === "local" ? (
+                  // 分发版 Local 模式：只显示API Key
+                  (() => {
+                    const currentProvider = provider;
+                    const getApiKeyFieldName = (provider: string) => {
+                      switch (provider) {
+                        case "google":
+                        case "google-vertex":
+                          return "apiKey";
+                        case "openrouter":
+                          return "openRouterApiKey";
+                        case "openai":
+                          return "openAIApiKey";
+                        case "anthropic":
+                          return "anthropicApiKey";
+                        case "deepseek":
+                          return "deepseekApiKey";
+                        case "xai":
+                          return "xAIApiKey";
+                        case "mistral":
+                          return "mistralApiKey";
+                        case "azure":
+                          return "azureApiKey";
+                        case "openaicompatible":
+                          return "openAICompatibleApiKey";
+                        default:
+                          return "apiKey";
+                      }
+                    };
+                    const apiKeyFieldName = getApiKeyFieldName(currentProvider) as keyof z.infer<typeof formSchema>;
+
+                    return (
+                      <FormField
+                        control={form.control}
+                        name={apiKeyFieldName}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("setting.apiKey") || "YourKey"}</FormLabel>
+                            <FormControl>
+                              <Password
+                                placeholder={t("setting.apiKeyPlaceholder") || "Please input your key"}
+                                {...field}
+                                onBlur={() =>
+                                  updateSetting(
+                                    apiKeyFieldName,
+                                    form.getValues(apiKeyFieldName)
+                                  )
+                                }
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })()
+                ) : (
+                  // 开源版：完整配置界面
+                  <>
                 <div className={BUILD_MODE === "export" ? "hidden" : ""}>
                   <FormField
                     control={form.control}
@@ -2968,6 +3050,8 @@ function Setting({ open, onClose }: SettingProps) {
                     )}
                   />
                 </div>
+                  </>
+                )}
               </TabsContent>
               <TabsContent className="space-y-4  min-h-[250px]" value="search">
                 <FormField

@@ -43,3 +43,9 @@ next-env.d.ts
 # Serwist
 public/sw*
 public/swe-worker*
+
+# Docker build script generated files
+Dockerfile.dist
+docker-compose.dist.yml
+.env.dist
+patch-dist.sh
