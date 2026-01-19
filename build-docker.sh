@@ -336,32 +336,36 @@ const PROVIDER_FIELDS = {
 
 let content = fs.readFileSync(SETTING_FILE, 'utf8');
 
+// 安全替换函数 - 避免替换值中的特殊字符被当作正则处理
+function safeReplace(str, fieldName, newValue) {
+  const pattern = new RegExp(`(${fieldName}: ")[^"]*(",)`);
+  // 使用函数作为替换参数，避免 $ 等特殊字符问题
+  return str.replace(pattern, (match, prefix, suffix) => prefix + newValue + suffix);
+}
+
 // 替换 provider (匹配任意当前值)
-content = content.replace(/provider: "[^"]*",/, `provider: "${PROVIDER_ID}",`);
+content = safeReplace(content, 'provider', PROVIDER_ID);
 
 // 替换 mode (匹配任意当前值，包括空字符串)
-content = content.replace(/mode: "[^"]*",/, `mode: "${DIST_MODE}",`);
+content = safeReplace(content, 'mode', DIST_MODE);
 
 // 获取当前 provider 的字段名
 const fields = PROVIDER_FIELDS[PROVIDER_ID];
 if (fields) {
-  // 替换 API Proxy (使用字符串替换，避免正则特殊字符问题)
-  const proxyPattern = new RegExp(`${fields.proxy}: "[^"]*",`);
-  content = content.replace(proxyPattern, `${fields.proxy}: "${API_BASE_URL}",`);
+  // 替换 API Proxy
+  content = safeReplace(content, fields.proxy, API_BASE_URL);
 
   // 替换 Thinking Model
-  const thinkingPattern = new RegExp(`${fields.thinking}: "[^"]*",`);
-  content = content.replace(thinkingPattern, `${fields.thinking}: "${THINKING_MODEL}",`);
+  content = safeReplace(content, fields.thinking, THINKING_MODEL);
 
   // 替换 Networking Model
-  const networkingPattern = new RegExp(`${fields.networking}: "[^"]*",`);
-  content = content.replace(networkingPattern, `${fields.networking}: "${NETWORKING_MODEL}",`);
+  content = safeReplace(content, fields.networking, NETWORKING_MODEL);
 }
 
 // 也修改全局的默认模型 (对于 google provider)
 if (PROVIDER_ID === 'google') {
-  content = content.replace(/thinkingModel: "[^"]*",/, `thinkingModel: "${THINKING_MODEL}",`);
-  content = content.replace(/networkingModel: "[^"]*",/, `networkingModel: "${NETWORKING_MODEL}",`);
+  content = safeReplace(content, 'thinkingModel', THINKING_MODEL);
+  content = safeReplace(content, 'networkingModel', NETWORKING_MODEL);
 }
 
 fs.writeFileSync(SETTING_FILE, content);
