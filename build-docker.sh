@@ -298,123 +298,75 @@ build_distribution() {
 generate_dist_files() {
     print_info "生成分发版配置文件..."
 
-    # 生成源码patch脚本
-    cat > patch-dist.sh << 'PATCHEOF'
-#!/bin/sh
-# 分发版源码patch脚本 - 设置默认值
+    # 生成源码patch脚本 (使用 Node.js 替代 shell sed，避免特殊字符问题)
+    cat > patch-dist.js << 'PATCHEOF'
+// patch-dist.js - 分发版源码 patch 脚本
+const fs = require('fs');
 
-PROVIDER_ID="$1"
-API_BASE_URL="$2"
-THINKING_MODEL="$3"
-NETWORKING_MODEL="$4"
-DIST_MODE="$5"
+const PROVIDER_ID = process.argv[2];
+const API_BASE_URL = process.argv[3];
+const THINKING_MODEL = process.argv[4];
+const NETWORKING_MODEL = process.argv[5];
+const DIST_MODE = process.argv[6];
 
-SETTING_FILE="src/store/setting.ts"
+const SETTING_FILE = 'src/store/setting.ts';
 
-echo "正在为分发版设置默认值..."
-echo "Provider: $PROVIDER_ID"
-echo "API Base URL: $API_BASE_URL"
-echo "Thinking Model: $THINKING_MODEL"
-echo "Networking Model: $NETWORKING_MODEL"
-echo "Mode: $DIST_MODE"
+console.log('正在为分发版设置默认值...');
+console.log('Provider:', PROVIDER_ID);
+console.log('API Base URL:', API_BASE_URL);
+console.log('Thinking Model:', THINKING_MODEL);
+console.log('Networking Model:', NETWORKING_MODEL);
+console.log('Mode:', DIST_MODE);
 
-# 根据不同的provider设置对应的字段名
-case "$PROVIDER_ID" in
-    "google")
-        API_KEY_FIELD="apiKey"
-        API_PROXY_FIELD="apiProxy"
-        THINKING_FIELD="thinkingModel"
-        NETWORKING_FIELD="networkingModel"
-        ;;
-    "google-vertex")
-        API_KEY_FIELD="googleVertexProject"
-        API_PROXY_FIELD="googleVertexLocation"
-        THINKING_FIELD="googleVertexThinkingModel"
-        NETWORKING_FIELD="googleVertexNetworkingModel"
-        ;;
-    "openrouter")
-        API_KEY_FIELD="openRouterApiKey"
-        API_PROXY_FIELD="openRouterApiProxy"
-        THINKING_FIELD="openRouterThinkingModel"
-        NETWORKING_FIELD="openRouterNetworkingModel"
-        ;;
-    "openai")
-        API_KEY_FIELD="openAIApiKey"
-        API_PROXY_FIELD="openAIApiProxy"
-        THINKING_FIELD="openAIThinkingModel"
-        NETWORKING_FIELD="openAINetworkingModel"
-        ;;
-    "anthropic")
-        API_KEY_FIELD="anthropicApiKey"
-        API_PROXY_FIELD="anthropicApiProxy"
-        THINKING_FIELD="anthropicThinkingModel"
-        NETWORKING_FIELD="anthropicNetworkingModel"
-        ;;
-    "deepseek")
-        API_KEY_FIELD="deepseekApiKey"
-        API_PROXY_FIELD="deepseekApiProxy"
-        THINKING_FIELD="deepseekThinkingModel"
-        NETWORKING_FIELD="deepseekNetworkingModel"
-        ;;
-    "xai")
-        API_KEY_FIELD="xAIApiKey"
-        API_PROXY_FIELD="xAIApiProxy"
-        THINKING_FIELD="xAIThinkingModel"
-        NETWORKING_FIELD="xAINetworkingModel"
-        ;;
-    "mistral")
-        API_KEY_FIELD="mistralApiKey"
-        API_PROXY_FIELD="mistralApiProxy"
-        THINKING_FIELD="mistralThinkingModel"
-        NETWORKING_FIELD="mistralNetworkingModel"
-        ;;
-    "azure")
-        API_KEY_FIELD="azureApiKey"
-        API_PROXY_FIELD="azureResourceName"
-        THINKING_FIELD="azureThinkingModel"
-        NETWORKING_FIELD="azureNetworkingModel"
-        ;;
-    "openaicompatible")
-        API_KEY_FIELD="openAICompatibleApiKey"
-        API_PROXY_FIELD="openAICompatibleApiProxy"
-        THINKING_FIELD="openAICompatibleThinkingModel"
-        NETWORKING_FIELD="openAICompatibleNetworkingModel"
-        ;;
-    "pollinations")
-        API_KEY_FIELD="pollinationsApiProxy"
-        API_PROXY_FIELD="pollinationsApiProxy"
-        THINKING_FIELD="pollinationsThinkingModel"
-        NETWORKING_FIELD="pollinationsNetworkingModel"
-        ;;
-    "ollama")
-        API_KEY_FIELD="ollamaApiProxy"
-        API_PROXY_FIELD="ollamaApiProxy"
-        THINKING_FIELD="ollamaThinkingModel"
-        NETWORKING_FIELD="ollamaNetworkingModel"
-        ;;
-esac
+// Provider 字段映射
+const PROVIDER_FIELDS = {
+  'google': { proxy: 'apiProxy', thinking: 'thinkingModel', networking: 'networkingModel' },
+  'google-vertex': { proxy: 'googleVertexLocation', thinking: 'googleVertexThinkingModel', networking: 'googleVertexNetworkingModel' },
+  'openrouter': { proxy: 'openRouterApiProxy', thinking: 'openRouterThinkingModel', networking: 'openRouterNetworkingModel' },
+  'openai': { proxy: 'openAIApiProxy', thinking: 'openAIThinkingModel', networking: 'openAINetworkingModel' },
+  'anthropic': { proxy: 'anthropicApiProxy', thinking: 'anthropicThinkingModel', networking: 'anthropicNetworkingModel' },
+  'deepseek': { proxy: 'deepseekApiProxy', thinking: 'deepseekThinkingModel', networking: 'deepseekNetworkingModel' },
+  'xai': { proxy: 'xAIApiProxy', thinking: 'xAIThinkingModel', networking: 'xAINetworkingModel' },
+  'mistral': { proxy: 'mistralApiProxy', thinking: 'mistralThinkingModel', networking: 'mistralNetworkingModel' },
+  'azure': { proxy: 'azureResourceName', thinking: 'azureThinkingModel', networking: 'azureNetworkingModel' },
+  'openaicompatible': { proxy: 'openAICompatibleApiProxy', thinking: 'openAICompatibleThinkingModel', networking: 'openAICompatibleNetworkingModel' },
+  'pollinations': { proxy: 'pollinationsApiProxy', thinking: 'pollinationsThinkingModel', networking: 'pollinationsNetworkingModel' },
+  'ollama': { proxy: 'ollamaApiProxy', thinking: 'ollamaThinkingModel', networking: 'ollamaNetworkingModel' },
+};
 
-# 修改默认provider
-sed -i "s/provider: \"google\",/provider: \"$PROVIDER_ID\",/" "$SETTING_FILE"
+let content = fs.readFileSync(SETTING_FILE, 'utf8');
 
-# 修改默认mode
-sed -i "s/mode: \"\",/mode: \"$DIST_MODE\",/" "$SETTING_FILE"
+// 替换 provider (匹配任意当前值)
+content = content.replace(/provider: "[^"]*",/, `provider: "${PROVIDER_ID}",`);
 
-# 修改API Proxy默认值
-sed -i "s|$API_PROXY_FIELD: \"\",|$API_PROXY_FIELD: \"$API_BASE_URL\",|" "$SETTING_FILE"
+// 替换 mode (匹配任意当前值，包括空字符串)
+content = content.replace(/mode: "[^"]*",/, `mode: "${DIST_MODE}",`);
 
-# 修改模型默认值
-sed -i "s|$THINKING_FIELD: \"[^\"]*\",|$THINKING_FIELD: \"$THINKING_MODEL\",|" "$SETTING_FILE"
-sed -i "s|$NETWORKING_FIELD: \"[^\"]*\",|$NETWORKING_FIELD: \"$NETWORKING_MODEL\",|" "$SETTING_FILE"
+// 获取当前 provider 的字段名
+const fields = PROVIDER_FIELDS[PROVIDER_ID];
+if (fields) {
+  // 替换 API Proxy (使用字符串替换，避免正则特殊字符问题)
+  const proxyPattern = new RegExp(`${fields.proxy}: "[^"]*",`);
+  content = content.replace(proxyPattern, `${fields.proxy}: "${API_BASE_URL}",`);
 
-# 也修改全局的默认模型
-sed -i "s|thinkingModel: \"[^\"]*\",|thinkingModel: \"$THINKING_MODEL\",|" "$SETTING_FILE"
-sed -i "s|networkingModel: \"[^\"]*\",|networkingModel: \"$NETWORKING_MODEL\",|" "$SETTING_FILE"
+  // 替换 Thinking Model
+  const thinkingPattern = new RegExp(`${fields.thinking}: "[^"]*",`);
+  content = content.replace(thinkingPattern, `${fields.thinking}: "${THINKING_MODEL}",`);
 
-echo "默认值设置完成"
+  // 替换 Networking Model
+  const networkingPattern = new RegExp(`${fields.networking}: "[^"]*",`);
+  content = content.replace(networkingPattern, `${fields.networking}: "${NETWORKING_MODEL}",`);
+}
+
+// 也修改全局的默认模型 (对于 google provider)
+if (PROVIDER_ID === 'google') {
+  content = content.replace(/thinkingModel: "[^"]*",/, `thinkingModel: "${THINKING_MODEL}",`);
+  content = content.replace(/networkingModel: "[^"]*",/, `networkingModel: "${NETWORKING_MODEL}",`);
+}
+
+fs.writeFileSync(SETTING_FILE, content);
+console.log('默认值设置完成');
 PATCHEOF
-
-    chmod +x patch-dist.sh
 
     # 生成 Dockerfile.dist
     cat > Dockerfile.dist << 'EOF'
@@ -446,9 +398,8 @@ ARG NETWORKING_MODEL
 ARG DIST_MODE
 
 # 应用分发版patch（修改默认值）
-COPY patch-dist.sh ./
-RUN chmod +x patch-dist.sh && \
-    ./patch-dist.sh "$DEFAULT_PROVIDER" "$API_BASE_URL" "$THINKING_MODEL" "$NETWORKING_MODEL" "$DIST_MODE"
+COPY patch-dist.js ./
+RUN node patch-dist.js "$DEFAULT_PROVIDER" "$API_BASE_URL" "$THINKING_MODEL" "$NETWORKING_MODEL" "$DIST_MODE"
 
 # 设置环境变量（构建时注入）
 ENV NEXT_PUBLIC_DISABLED_AI_PROVIDER=$DISABLED_PROVIDERS
@@ -554,7 +505,7 @@ EOF
     print_success "配置文件生成完成："
     echo "  - Dockerfile.dist"
     echo "  - docker-compose.dist.yml"
-    echo "  - patch-dist.sh"
+    echo "  - patch-dist.js"
 }
 
 # 显示使用说明

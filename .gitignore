@@ -47,4 +47,4 @@ public/swe-worker*
 # Docker build script generated files
 Dockerfile.dist
 docker-compose.dist.yml
-patch-dist.sh
+patch-dist.js
