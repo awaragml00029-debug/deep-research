@@ -188,15 +188,36 @@ build_distribution() {
             ;;
     esac
 
-    # 步骤3: 配置API Base URL（仅Local模式需要）
+    # 步骤3: 配置API相关参数
     if [ "$MODE" = "local" ]; then
         echo ""
         print_info "Local模式需要配置API Base URL（前端直接调用）"
         read -p "API Base URL [${DEFAULT_BASE_URL}]: " api_base_url
         api_base_url=${api_base_url:-$DEFAULT_BASE_URL}
     else
-        # Proxy模式使用环境变量配置，有默认值
-        api_base_url="$DEFAULT_BASE_URL"
+        # Proxy模式需要配置 API Key、API Base URL 和访问密码
+        echo ""
+        print_header "Proxy 模式配置"
+
+        print_info "访问密码 - 最终用户需要输入此密码才能使用"
+        read -p "ACCESS_PASSWORD: " access_password
+        if [ -z "$access_password" ]; then
+            print_error "访问密码不能为空！"
+            exit 1
+        fi
+
+        echo ""
+        print_info "${PROVIDER_NAME} API Key"
+        read -p "${ENV_PREFIX}_API_KEY: " api_key
+        if [ -z "$api_key" ]; then
+            print_error "API Key 不能为空！"
+            exit 1
+        fi
+
+        echo ""
+        print_info "API Base URL（直接回车使用默认值）"
+        read -p "API Base URL [${DEFAULT_BASE_URL}]: " api_base_url
+        api_base_url=${api_base_url:-$DEFAULT_BASE_URL}
     fi
 
     # 步骤4: 配置模型
@@ -235,10 +256,10 @@ build_distribution() {
     print_header "配置摘要"
     echo "AI 供应商: $PROVIDER_NAME ($PROVIDER_ID)"
     echo "运行模式: $MODE"
-    if [ "$MODE" = "local" ]; then
-        echo "API Base URL: $api_base_url"
-    else
-        echo "API Base URL: (运行时通过环境变量配置)"
+    echo "API Base URL: $api_base_url"
+    if [ "$MODE" = "proxy" ]; then
+        echo "ACCESS_PASSWORD: $access_password"
+        echo "API Key: ${api_key:0:8}..." # 只显示前8位
     fi
     echo "Thinking Model: $thinking_model"
     echo "Task Model: $networking_model"
@@ -493,11 +514,8 @@ services:
     restart: unless-stopped
     environment:
       # ========== Proxy 模式配置 ==========
-      # 访问密码（必填）- 最终用户需要输入此密码
-      - ACCESS_PASSWORD=your-password-here
-      # ${PROVIDER_NAME} API Key（必填）
-      - ${ENV_PREFIX}_API_KEY=your-api-key-here
-      # API Base URL（可选，修改为你的自定义URL）
+      - ACCESS_PASSWORD=${access_password}
+      - ${ENV_PREFIX}_API_KEY=${api_key}
       - ${ENV_PREFIX}_API_BASE_URL=${api_base_url}
       # MCP 配置
       - MCP_AI_PROVIDER=${PROVIDER_ID}
@@ -547,17 +565,15 @@ show_usage_instructions() {
     if [ "$MODE" = "proxy" ]; then
         echo "📦 Proxy 模式 - 服务端代理"
         echo ""
-        echo "1. 编辑 docker-compose.dist.yml，配置 environment 部分："
-        echo "   ${YELLOW}ACCESS_PASSWORD=your-secure-password${NC}  （最终用户需要输入的密码）"
-        echo "   ${YELLOW}${ENV_PREFIX}_API_KEY=your-api-key${NC}  （你的 ${PROVIDER_NAME} API Key）"
-        echo ""
-        echo "2. 启动服务："
+        echo "1. 启动服务："
         echo "   ${BLUE}docker-compose -f docker-compose.dist.yml up -d${NC}"
         echo ""
-        echo "3. 访问 http://localhost:3333"
+        echo "2. 访问 http://localhost:3333"
         echo ""
-        echo "4. 最终用户只需要输入访问密码即可使用"
-        echo "   ${GREEN}API Key 已在服务端配置，用户无需知道${NC}"
+        echo "3. 最终用户输入访问密码即可使用"
+        echo "   ${GREEN}所有配置已写入 docker-compose.dist.yml${NC}"
+        echo ""
+        echo "如需修改配置，编辑 docker-compose.dist.yml 的 environment 部分"
     else
         echo "🌐 Local 模式 - 浏览器直接调用"
         echo ""
