@@ -70,8 +70,7 @@ open http://localhost:3333
 
 **构建完成后会生成以下文件：**
 - `Dockerfile.dist` - 分发版Dockerfile
-- `docker-compose.dist.yml` - 分发版docker-compose配置
-- `.env.dist` - 环境变量配置模板
+- `docker-compose.dist.yml` - 分发版docker-compose配置（含环境变量）
 - `patch-dist.sh` - 源码patch脚本（构建时使用）
 
 ## 支持的AI供应商
@@ -141,10 +140,9 @@ docker-compose -f docker-compose.dist.yml up -d
 
 **使用方法：**
 ```bash
-# 1. 编辑 .env.dist，设置访问密码
-echo "ACCESS_PASSWORD=my-secure-password" > .env.dist
-
-# 注意：API Key已经在构建时预设到docker-compose.dist.yml中
+# 1. 编辑 docker-compose.dist.yml，配置 environment 部分：
+#    - ACCESS_PASSWORD=my-secure-password  （访问密码）
+#    - DEEPSEEK_API_KEY=sk-xxx             （你的API Key）
 
 # 2. 启动服务
 docker-compose -f docker-compose.dist.yml up -d
@@ -180,8 +178,7 @@ deep-research/
 │
 # 以下文件在运行分发版构建后生成：
 ├── Dockerfile.dist              # 分发版Dockerfile
-├── docker-compose.dist.yml      # 分发版docker-compose
-├── .env.dist                    # 分发版环境变量
+├── docker-compose.dist.yml      # 分发版docker-compose（含环境变量配置）
 └── patch-dist.sh                # 源码patch脚本
 ```
 
@@ -209,13 +206,7 @@ git pull upstream main
 
 ### Q3: Proxy模式下如何更换API Key？
 
-方法1：修改 `.env.dist` 文件中的API Key，然后重启容器：
-```bash
-# 编辑 .env.dist，修改对应的 API Key
-docker-compose -f docker-compose.dist.yml restart
-```
-
-方法2：修改 `docker-compose.dist.yml` 中的环境变量，然后重启：
+修改 `docker-compose.dist.yml` 中的环境变量，然后重启：
 ```bash
 # 编辑 docker-compose.dist.yml
 # 修改 environment 部分的 API Key
@@ -295,7 +286,7 @@ API Base URL: https://my-proxy.example.com/v1
 3. **网络环境**：构建过程需要访问npm仓库和Docker Hub
 4. **API Key安全**：
    - Local模式：API Key存储在用户浏览器中
-   - Proxy模式：API Key存储在服务端环境变量中，注意保护 `.env.dist` 文件
+   - Proxy模式：API Key存储在 `docker-compose.dist.yml` 中，注意保护该文件
 5. **端口占用**：默认使用3333端口，确保端口未被占用
 6. **Docker版本**：建议使用Docker 20.10+和Docker Compose 2.0+
 

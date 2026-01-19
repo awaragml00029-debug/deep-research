@@ -464,8 +464,9 @@ EXPOSE 3000
 CMD ["node", "server.js"]
 EOF
 
-    # 生成 docker-compose.dist.yml
-    cat > docker-compose.dist.yml << EOF
+    # 生成 docker-compose.dist.yml（使用 environment 配置，一个文件搞定）
+    if [ "$MODE" = "proxy" ]; then
+        cat > docker-compose.dist.yml << EOF
 version: "3.9"
 services:
   deep-research:
@@ -482,53 +483,55 @@ services:
         DIST_MODE: "$MODE"
     image: ${image_name}:${image_tag}
     container_name: deep-research-dist
-    env_file:
-      - .env.dist
     ports:
       - "3333:3000"
     restart: unless-stopped
-EOF
-
-    # 生成 .env.dist 模板
-    if [ "$MODE" = "proxy" ]; then
-        # Proxy 模式：部署者需要配置API Key和访问密码
-        cat > .env.dist << EOF
-# ============================================
-# Proxy 模式配置
-# ============================================
-
-# 访问密码（必填）- 最终用户需要输入此密码才能使用
-ACCESS_PASSWORD=your-password-here
-
-# AI 供应商 API Key（必填）- 请填写你的 ${PROVIDER_NAME} API Key
-${ENV_PREFIX}_API_KEY=your-api-key-here
-
-# API Base URL（已预设，如需修改请取消注释）
-# ${ENV_PREFIX}_API_BASE_URL=${api_base_url}
-
-# MCP 配置（已预设）
-MCP_AI_PROVIDER=${PROVIDER_ID}
-MCP_THINKING_MODEL=${thinking_model}
-MCP_TASK_MODEL=${networking_model}
+    environment:
+      # ========== Proxy 模式配置 ==========
+      # 访问密码（必填）- 最终用户需要输入此密码
+      - ACCESS_PASSWORD=your-password-here
+      # ${PROVIDER_NAME} API Key（必填）
+      - ${ENV_PREFIX}_API_KEY=your-api-key-here
+      # API Base URL（可选，有默认值）
+      # - ${ENV_PREFIX}_API_BASE_URL=https://your-custom-url
+      # MCP 配置
+      - MCP_AI_PROVIDER=${PROVIDER_ID}
+      - MCP_THINKING_MODEL=${thinking_model}
+      - MCP_TASK_MODEL=${networking_model}
 EOF
     else
-        # Local 模式：用户在浏览器界面输入API Key
-        cat > .env.dist << EOF
-# 访问密码（可选，如果需要访问保护请设置）
-ACCESS_PASSWORD=
-
-# 以下配置已在构建时预设，用户只需在浏览器界面输入API Key即可使用
-# AI Provider: ${PROVIDER_NAME}
-# API Base URL: ${api_base_url}
-# Thinking Model: ${thinking_model}
-# Task Model: ${networking_model}
+        cat > docker-compose.dist.yml << EOF
+version: "3.9"
+services:
+  deep-research:
+    build:
+      context: .
+      dockerfile: Dockerfile.dist
+      args:
+        DISABLED_PROVIDERS: "$DISABLED_PROVIDERS"
+        DEFAULT_PROVIDER: "$PROVIDER_ID"
+        DEFAULT_MODE: "$MODE"
+        API_BASE_URL: "$api_base_url"
+        THINKING_MODEL: "$thinking_model"
+        NETWORKING_MODEL: "$networking_model"
+        DIST_MODE: "$MODE"
+    image: ${image_name}:${image_tag}
+    container_name: deep-research-dist
+    ports:
+      - "3333:3000"
+    restart: unless-stopped
+    environment:
+      # ========== Local 模式配置 ==========
+      # 访问密码（可选）
+      - ACCESS_PASSWORD=
+      # 用户在浏览器界面输入 API Key 即可使用
 EOF
     fi
 
     print_success "配置文件生成完成："
     echo "  - Dockerfile.dist"
     echo "  - docker-compose.dist.yml"
-    echo "  - .env.dist"
+    echo "  - patch-dist.sh"
 }
 
 # 显示使用说明
@@ -539,7 +542,7 @@ show_usage_instructions() {
     if [ "$MODE" = "proxy" ]; then
         echo "📦 Proxy 模式 - 服务端代理"
         echo ""
-        echo "1. 编辑 .env.dist 文件，配置以下内容："
+        echo "1. 编辑 docker-compose.dist.yml，配置 environment 部分："
         echo "   ${YELLOW}ACCESS_PASSWORD=your-secure-password${NC}  （最终用户需要输入的密码）"
         echo "   ${YELLOW}${ENV_PREFIX}_API_KEY=your-api-key${NC}  （你的 ${PROVIDER_NAME} API Key）"
         echo ""
