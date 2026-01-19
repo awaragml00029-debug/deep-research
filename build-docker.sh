@@ -286,6 +286,7 @@ PROVIDER_ID="$1"
 API_BASE_URL="$2"
 THINKING_MODEL="$3"
 NETWORKING_MODEL="$4"
+DIST_MODE="$5"
 
 SETTING_FILE="src/store/setting.ts"
 
@@ -294,6 +295,7 @@ echo "Provider: $PROVIDER_ID"
 echo "API Base URL: $API_BASE_URL"
 echo "Thinking Model: $THINKING_MODEL"
 echo "Networking Model: $NETWORKING_MODEL"
+echo "Mode: $DIST_MODE"
 
 # 根据不同的provider设置对应的字段名
 case "$PROVIDER_ID" in
@@ -374,6 +376,9 @@ esac
 # 修改默认provider
 sed -i "s/provider: \"google\",/provider: \"$PROVIDER_ID\",/" "$SETTING_FILE"
 
+# 修改默认mode
+sed -i "s/mode: \"\",/mode: \"$DIST_MODE\",/" "$SETTING_FILE"
+
 # 修改API Proxy默认值
 sed -i "s|$API_PROXY_FIELD: \"\",|$API_PROXY_FIELD: \"$API_BASE_URL\",|" "$SETTING_FILE"
 
@@ -422,7 +427,7 @@ ARG DIST_MODE
 # 应用分发版patch（修改默认值）
 COPY patch-dist.sh ./
 RUN chmod +x patch-dist.sh && \
-    ./patch-dist.sh "$DEFAULT_PROVIDER" "$API_BASE_URL" "$THINKING_MODEL" "$NETWORKING_MODEL"
+    ./patch-dist.sh "$DEFAULT_PROVIDER" "$API_BASE_URL" "$THINKING_MODEL" "$NETWORKING_MODEL" "$DIST_MODE"
 
 # 设置环境变量（构建时注入）
 ENV NEXT_PUBLIC_DISABLED_AI_PROVIDER=$DISABLED_PROVIDERS
