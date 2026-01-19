@@ -497,8 +497,8 @@ services:
       - ACCESS_PASSWORD=your-password-here
       # ${PROVIDER_NAME} API Key（必填）
       - ${ENV_PREFIX}_API_KEY=your-api-key-here
-      # API Base URL（可选，有默认值）
-      # - ${ENV_PREFIX}_API_BASE_URL=https://your-custom-url
+      # API Base URL（可选，修改为你的自定义URL）
+      - ${ENV_PREFIX}_API_BASE_URL=${api_base_url}
       # MCP 配置
       - MCP_AI_PROVIDER=${PROVIDER_ID}
       - MCP_THINKING_MODEL=${thinking_model}
