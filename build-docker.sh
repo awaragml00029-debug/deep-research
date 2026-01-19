@@ -193,19 +193,7 @@ build_distribution() {
     read -p "API Base URL [${DEFAULT_BASE_URL}]: " api_base_url
     api_base_url=${api_base_url:-$DEFAULT_BASE_URL}
 
-    # 步骤4: 如果是Proxy模式，询问API Key
-    if [ "$MODE" = "proxy" ]; then
-        echo ""
-        print_warning "Proxy 模式需要预设 API Key"
-        read -p "请输入 API Key: " api_key
-
-        if [ -z "$api_key" ]; then
-            print_error "Proxy 模式必须提供 API Key！"
-            exit 1
-        fi
-    fi
-
-    # 步骤5: 配置模型
+    # 步骤4: 配置模型
     echo ""
     print_header "配置模型"
     print_info "Thinking Model: 用于深度思考的主要模型"
@@ -242,9 +230,6 @@ build_distribution() {
     echo "AI 供应商: $PROVIDER_NAME ($PROVIDER_ID)"
     echo "运行模式: $MODE"
     echo "API Base URL: $api_base_url"
-    if [ "$MODE" = "proxy" ]; then
-        echo "API Key: ${api_key:0:10}...（已设置）"
-    fi
     echo "Thinking Model: $thinking_model"
     echo "Task Model: $networking_model"
     echo "镜像名称: ${image_name}:${image_tag}"
@@ -496,14 +481,20 @@ EOF
 
     # 生成 .env.dist 模板
     if [ "$MODE" = "proxy" ]; then
-        # Proxy 模式：预设API Key
+        # Proxy 模式：部署者需要配置API Key和访问密码
         cat > .env.dist << EOF
-# 访问密码（必填）
+# ============================================
+# Proxy 模式配置
+# ============================================
+
+# 访问密码（必填）- 最终用户需要输入此密码才能使用
 ACCESS_PASSWORD=your-password-here
 
-# AI 供应商配置（已预设，请勿修改）
-${ENV_PREFIX}_API_KEY=${api_key}
-${ENV_PREFIX}_API_BASE_URL=${api_base_url}
+# AI 供应商 API Key（必填）- 请填写你的 ${PROVIDER_NAME} API Key
+${ENV_PREFIX}_API_KEY=your-api-key-here
+
+# API Base URL（已预设，如需修改请取消注释）
+# ${ENV_PREFIX}_API_BASE_URL=${api_base_url}
 
 # MCP 配置（已预设）
 MCP_AI_PROVIDER=${PROVIDER_ID}
@@ -511,7 +502,7 @@ MCP_THINKING_MODEL=${thinking_model}
 MCP_TASK_MODEL=${networking_model}
 EOF
     else
-        # Local 模式：用户需要在界面输入API Key
+        # Local 模式：用户在浏览器界面输入API Key
         cat > .env.dist << EOF
 # 访问密码（可选，如果需要访问保护请设置）
 ACCESS_PASSWORD=
@@ -538,16 +529,17 @@ show_usage_instructions() {
     if [ "$MODE" = "proxy" ]; then
         echo "📦 Proxy 模式 - 服务端代理"
         echo ""
-        echo "1. 编辑 .env.dist 文件，设置访问密码："
-        echo "   ${YELLOW}ACCESS_PASSWORD=your-secure-password${NC}"
+        echo "1. 编辑 .env.dist 文件，配置以下内容："
+        echo "   ${YELLOW}ACCESS_PASSWORD=your-secure-password${NC}  （最终用户需要输入的密码）"
+        echo "   ${YELLOW}${ENV_PREFIX}_API_KEY=your-api-key${NC}  （你的 ${PROVIDER_NAME} API Key）"
         echo ""
         echo "2. 启动服务："
         echo "   ${BLUE}docker-compose -f docker-compose.dist.yml up -d${NC}"
         echo ""
         echo "3. 访问 http://localhost:3333"
         echo ""
-        echo "4. 用户只需要输入访问密码即可使用"
-        echo "   ${GREEN}API Key 已预设在服务端，用户无需配置${NC}"
+        echo "4. 最终用户只需要输入访问密码即可使用"
+        echo "   ${GREEN}API Key 已在服务端配置，用户无需知道${NC}"
     else
         echo "🌐 Local 模式 - 浏览器直接调用"
         echo ""
