@@ -188,10 +188,16 @@ build_distribution() {
             ;;
     esac
 
-    # 步骤3: 配置API Base URL
-    echo ""
-    read -p "API Base URL [${DEFAULT_BASE_URL}]: " api_base_url
-    api_base_url=${api_base_url:-$DEFAULT_BASE_URL}
+    # 步骤3: 配置API Base URL（仅Local模式需要）
+    if [ "$MODE" = "local" ]; then
+        echo ""
+        print_info "Local模式需要配置API Base URL（前端直接调用）"
+        read -p "API Base URL [${DEFAULT_BASE_URL}]: " api_base_url
+        api_base_url=${api_base_url:-$DEFAULT_BASE_URL}
+    else
+        # Proxy模式使用环境变量配置，有默认值
+        api_base_url="$DEFAULT_BASE_URL"
+    fi
 
     # 步骤4: 配置模型
     echo ""
@@ -229,7 +235,11 @@ build_distribution() {
     print_header "配置摘要"
     echo "AI 供应商: $PROVIDER_NAME ($PROVIDER_ID)"
     echo "运行模式: $MODE"
-    echo "API Base URL: $api_base_url"
+    if [ "$MODE" = "local" ]; then
+        echo "API Base URL: $api_base_url"
+    else
+        echo "API Base URL: (运行时通过环境变量配置)"
+    fi
     echo "Thinking Model: $thinking_model"
     echo "Task Model: $networking_model"
     echo "镜像名称: ${image_name}:${image_tag}"
