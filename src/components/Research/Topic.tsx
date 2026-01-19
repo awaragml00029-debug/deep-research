@@ -65,8 +65,10 @@ function Topic() {
   });
 
   function handleCheck(): boolean {
-    const { mode } = useSettingStore.getState();
-    if ((mode === "local" && hasApiKey()) || mode === "proxy") {
+    const { mode, accessPassword } = useSettingStore.getState();
+    if (mode === "local" && hasApiKey()) {
+      return true;
+    } else if (mode === "proxy" && accessPassword) {
       return true;
     } else {
       const { setOpenSetting } = useGlobalStore.getState();
